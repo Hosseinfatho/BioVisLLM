@@ -1,0 +1,45 @@
+.main-view {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+.topic-banner {
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ddd;
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.content {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+}
+
+/* Debug outline */
+.content::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px dashed #ccc;
+  pointer-events: none;
+}
+
+svg {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 20px;
+} 

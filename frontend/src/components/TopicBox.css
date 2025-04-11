@@ -1,0 +1,24 @@
+.topic-box {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.topic-banner {
+  background: #2c3e50;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px 8px 0 0;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.content {
+  flex-grow: 1;
+  padding: 16px;
+  overflow: auto;
+  font-size: 0.85rem;
+} 
