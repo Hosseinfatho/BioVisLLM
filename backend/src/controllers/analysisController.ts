@@ -138,7 +138,11 @@ export const analyzeRegion = async (req: Request, res: Response) => {
     // Generate narrative based on selected model
     let narrative = '';
     if (model === 'gpt') {
-      narrative = await generateGPTNarrative(topic, regionData);
+      const gptNarrative = await generateGPTNarrative(topic, regionData);
+      if (!gptNarrative) {
+        return res.status(500).json({ error: 'Failed to generate GPT narrative' });
+      }
+      narrative = gptNarrative;
     } else if (model === 'biobert') {
       await loadBiobertModel();
       narrative = await generateBioBERTNarrative(topic, regionData);

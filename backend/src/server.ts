@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { OpenAI } from 'openai';
 import imageRoutes from './routes/imageRoutes';
+import { getSamples, getCellTypes, getGeneList, getGeneExpression } from './controllers/imageController';
 
 // Load environment variables
 dotenv.config();
@@ -28,6 +29,12 @@ app.get('/health', (req, res) => {
 
 // Add image routes
 app.use('/', imageRoutes);
+
+// Sample endpoints
+app.get('/api/samples', getSamples);
+app.post('/api/cell-types', getCellTypes);
+app.post('/api/gene-list', getGeneList);
+app.post('/api/gene-expression', getGeneExpression);
 
 // Start server
 app.listen(port, () => {

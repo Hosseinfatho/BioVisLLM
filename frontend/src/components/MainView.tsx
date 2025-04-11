@@ -1,70 +1,120 @@
 import React, { useState, useEffect } from 'react';
+import { Select, Button, message, Card } from 'antd';
+import axios from 'axios';
 import './MainView.css';
-import { MultiSampleViewer } from './MultiSampleViewer.jsx';
-
-interface Sample {
-  id: string;
-  name: string;
-}
 
 const MainView: React.FC = () => {
-  const [loading, setLoading] = useState(false);
-  const [samples] = useState<Sample[]>([
-    { id: 'skin_TXK6Z4X_A1', name: 'Skin Sample A1' },
-    { id: 'skin_TXK6Z4X_D1', name: 'Skin Sample D1' }
-  ]);
-  const [cellTypeCoordinatesData, setCellTypeCoordinatesData] = useState<any[]>([]);
-  const [cellTypeDir, setCellTypeDir] = useState<Record<string, string[]>>({});
-  const [regions, setRegions] = useState<any[]>([]);
-  const [NMFGOData, setNMFGOData] = useState<Record<string, any>>({});
-  const [NMFGODataLoading, setNMFGODataLoading] = useState(false);
-  const [analyzedRegion, setAnalyzedRegion] = useState<string | null>(null);
-  const [NMFclusterCells, setNMFclusterCells] = useState<any[]>([]);
-  const [selectedRegionGeneExpressionData, setSelectedRegionGeneExpressionData] = useState<any>(null);
+  const [samples, setSamples] = useState<string[]>([]);
+  const [selectedSample, setSelectedSample] = useState<string>('');
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [selectedCells, setSelectedCells] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  // Load initial cell type data
   useEffect(() => {
-    const loadCellTypeData = async () => {
-      setLoading(true);
+    // Fetch available samples from backend
+    const fetchSamples = async () => {
       try {
-        const response = await fetch('/get_cell_type_coordinates', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            sample_names: samples.map(s => s.id)
-          })
-        });
-        const data = await response.json();
-        setCellTypeCoordinatesData(data);
+        const response = await axios.get('http://localhost:3000/api/samples');
+        setSamples(response.data);
       } catch (error) {
-        console.error('Error loading cell type data:', error);
+        message.error('Failed to fetch samples');
       }
-      setLoading(false);
     };
+    fetchSamples();
+  }, []);
 
-    loadCellTypeData();
-  }, [samples]);
+  const handleSampleSelect = async (value: string) => {
+    setSelectedSample(value);
+    try {
+      const response = await axios.get(`http://localhost:3000/api/samples/${value}/image`);
+      setImageUrl(response.data.imageUrl);
+    } catch (error) {
+      message.error('Failed to load image');
+    }
+  };
+
+  const handleCellSelect = (value: string[]) => {
+    setSelectedCells(value);
+  };
+
+  const handleGeneExpression = async () => {
+    if (!selectedSample || selectedCells.length === 0) {
+      message.warning('Please select a sample and cells first');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await axios.post('http://localhost:3000/api/analyze', {
+        sampleId: selectedSample,
+        cells: selectedCells
+      });
+      message.success('Analysis completed successfully');
+    } catch (error) {
+      message.error('Failed to analyze gene expression');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="main-view">
-      <div className="topic-banner">Multi Sample Viewer</div>
-      <div className="content">
-        <MultiSampleViewer 
-          setLoading={setLoading}
-          samples={samples}
-          cellTypeCoordinatesData={cellTypeCoordinatesData}
-          cellTypeDir={cellTypeDir}
-          regions={regions}
-          setRegions={setRegions}
-          setNMFGOData={setNMFGOData}
-          setNMFGODataLoading={setNMFGODataLoading}
-          analyzedRegion={analyzedRegion}
-          setAnalyzedRegion={setAnalyzedRegion}
-          NMFclusterCells={NMFclusterCells}
-          setSelectedRegionGeneExpressionData={setSelectedRegionGeneExpressionData}
-        />
+    <div className="main-container">
+      <div className="control-panels">
+        <Card className="left-panel" title="Cell & Gene Analysis">
+          <div className="control-group">
+            <Select
+              style={{ width: '100%', marginBottom: '16px' }}
+              placeholder="Select Cell Type"
+              onChange={handleCellSelect}
+              mode="multiple"
+              options={[
+                { value: 'cell1', label: 'Cell Type 1' },
+                { value: 'cell2', label: 'Cell Type 2' },
+                { value: 'cell3', label: 'Cell Type 3' }
+              ]}
+            />
+            <Select
+              style={{ width: '100%', marginBottom: '16px' }}
+              placeholder="Select Gene"
+              options={[
+                { value: 'gene1', label: 'Gene 1' },
+                { value: 'gene2', label: 'Gene 2' },
+                { value: 'gene3', label: 'Gene 3' }
+              ]}
+            />
+            <Button type="primary" onClick={handleGeneExpression} loading={loading}>
+              Analyze Gene Expression
+            </Button>
+          </div>
+        </Card>
+
+        <Card className="right-panel" title="Region Selection">
+          <div className="control-group">
+            <Select
+              style={{ width: '100%', marginBottom: '16px' }}
+              placeholder="Select Sample"
+              onChange={handleSampleSelect}
+              options={samples.map(sample => ({ value: sample, label: sample }))}
+            />
+            <Select
+              style={{ width: '100%' }}
+              placeholder="Select Region"
+              options={[
+                { value: 'region1', label: 'Region 1' },
+                { value: 'region2', label: 'Region 2' },
+                { value: 'region3', label: 'Region 3' }
+              ]}
+            />
+          </div>
+        </Card>
+      </div>
+
+      <div className="image-container">
+        {imageUrl ? (
+          <img src={imageUrl} alt="Sample" style={{ maxWidth: '100%', maxHeight: '100%' }} />
+        ) : (
+          <div className="placeholder">Select a sample to view image</div>
+        )}
       </div>
     </div>
   );

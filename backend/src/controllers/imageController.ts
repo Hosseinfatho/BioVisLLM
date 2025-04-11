@@ -14,6 +14,9 @@ const SAMPLE_TO_TIFF: Record<SampleId, string> = {
     'skin_TXK6Z4X_D1': 'H1-TXK6Z4X-D1_SK24-001_A1-5-004.tiff'
 };
 
+// Sample data directory path
+const DATA_DIR = path.join(__dirname, '../../data');
+
 export const getTile = async (req: Request, res: Response) => {
     try {
         const { sample_id, x, y } = req.query;
@@ -59,4 +62,74 @@ export const getTile = async (req: Request, res: Response) => {
             res.status(500).json({ error: 'Internal server error', details: 'Unknown error occurred' });
         }
     }
+};
+
+// Get available samples
+export const getSamples = (req: Request, res: Response) => {
+  try {
+    const samples = ['skin_TXK6Z4X_1']; // For now, hardcoded sample
+    res.json(samples);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get samples' });
+  }
+};
+
+// Get cell types for a sample
+export const getCellTypes = (req: Request, res: Response) => {
+  try {
+    const { sample } = req.body;
+    // For now, return hardcoded cell types
+    const cellTypes = [
+      'Keratinocyte',
+      'Melanocyte',
+      'Fibroblast',
+      'Endothelial',
+      'Immune'
+    ];
+    res.json(cellTypes);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get cell types' });
+  }
+};
+
+// Get gene list for a sample
+export const getGeneList = (req: Request, res: Response) => {
+  try {
+    const { sample } = req.body;
+    // For now, return hardcoded gene list
+    const genes = [
+      'KRT14',
+      'KRT5',
+      'TYR',
+      'DCT',
+      'COL1A1',
+      'VWF',
+      'CD3E',
+      'CD4'
+    ];
+    res.json(genes);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get gene list' });
+  }
+};
+
+// Get gene expression data for selected region
+export const getGeneExpression = (req: Request, res: Response) => {
+  try {
+    const { sample, region } = req.body;
+    // For now, return mock gene expression data
+    const geneExpression = {
+      'KRT14': 0.8,
+      'KRT5': 0.6,
+      'TYR': 0.2,
+      'DCT': 0.1,
+      'COL1A1': 0.4,
+      'VWF': 0.3,
+      'CD3E': 0.1,
+      'CD4': 0.05
+    };
+    res.json(geneExpression);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get gene expression data' });
+  }
 }; 
