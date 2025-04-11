@@ -1,123 +1,84 @@
-# BioVisLLM
+# BioNarrator: Trend-Aware Gene Expression Visualizations
 
-A web application for displaying and analyzing biomedical images with advanced features.
+BioNarrator is an interactive tool for visualizing and analyzing gene expression data using Large Language Models (LLMs). This tool allows users to interact with biomedical images, select regions of interest, and generate narrative summaries using BioBERT and GPT models.
+
+## Key Features
+
+- Display of biomedical images with region of interest selection capability
+- Analysis of five different topics:
+  - Gene Expression Trends
+  - Cell Types
+  - Gene Pathways
+  - Gene Network Interactions
+  - Biological Significance
+- Choice between BioBERT and GPT models for analysis
+- Modern and responsive user interface
 
 ## Prerequisites
 
-- Node.js (version 18 or higher)
-- npm (version 8 or higher)
-- Python 3.8 or higher (for backend)
+- Node.js (version 14 or higher)
+- npm or yarn
 
-## Installation and Setup
+## Installation
 
-### 1. Backend Setup
-
+1. Clone the repository:
 ```bash
-# Navigate to backend directory
-cd backend
-
-# Install dependencies
-npm install
-
-# Create .env file
-cp .env.example .env
-
-# Edit .env file and set environment variables
-# OPENAI_API_KEY=your_api_key_here
-
-# Start backend server
-npm run dev
+git clone https://github.com/yourusername/bionarrator.git
+cd bionarrator
 ```
 
-### 2. Frontend Setup
-
+2. Install dependencies:
 ```bash
-# Navigate to frontend directory
-cd frontend
-
-# Install dependencies
 npm install
+# or
+yarn install
+```
 
-# Start development server
+3. Run the development server:
+```bash
 npm run dev
+# or
+yarn dev
 ```
 
 ## Project Structure
 
 ```
-BioVisLLM/
-├── backend/                 # Backend server
-│   ├── src/
-│   │   ├── controllers/    # API controllers
-│   │   ├── routes/        # API routes
-│   │   └── server.ts      # Main server file
-│   └── package.json
-│
-├── frontend/               # Frontend application
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── styles/       # CSS files
-│   │   └── App.tsx       # Main component
-│   └── package.json
-│
+bionarrator/
+├── src/
+│   ├── components/
+│   │   ├── ImageDisplay.tsx
+│   │   └── TopicBox.tsx
+│   ├── hooks/
+│   ├── services/
+│   ├── types/
+│   ├── utils/
+│   ├── assets/
+│   ├── App.tsx
+│   └── main.tsx
+├── public/
+│   └── samples/
+├── package.json
+├── tsconfig.json
 └── README.md
 ```
 
-## Features
+## Usage
 
-- Display of biomedical images
-- Support for various image formats
-- Zoom and pan capabilities
-- Metadata display
-- Modern and responsive user interface
-
-## Default Ports
-
-- Frontend: http://localhost:5173
-- Backend: http://localhost:3000
-
-## Important Notes
-
-1. Ensure that the ports are not in use by other applications.
-2. Image files should be placed in the `data` directory.
-3. For AI features, you need to set a valid OpenAI API Key in the `.env` file.
-
-## Troubleshooting
-
-### Port Already in Use Error
-
-If you encounter the `EADDRINUSE` error:
-
-1. Stop running processes:
-```bash
-# On Windows
-taskkill /F /IM node.exe
-
-# On Linux/Mac
-pkill node
-```
-
-2. Restart the servers.
-
-### Dependency Errors
-
-If you encounter dependency errors:
-
-1. Delete the `node_modules` directory
-2. Delete the `package-lock.json` file
-3. Reinstall dependencies:
-```bash
-npm install
-```
+1. Open the application in your browser
+2. Select a tissue sample from the dropdown menu
+3. Choose your preferred model (BioBERT or GPT)
+4. Click and drag on the image to select a region
+5. Analysis results will be displayed in the five topic boxes
 
 ## Contributing
 
-To contribute to the project:
+Contributions are always welcome! To contribute:
 
 1. Fork the project
-2. Create a new branch
+2. Create a new branch for your feature
 3. Commit your changes
-4. Submit a pull request
+4. Create a pull request
 
 ## License
 
