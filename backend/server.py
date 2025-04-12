@@ -288,11 +288,9 @@ def get_gene_name_search():
     """Search for genes by name"""
     query = request.args.get('q', '').strip().lower()
     gene_list = get_gene_list()
-    
-    # Return the full list if no query is provided
+     # Return the full list if no query is provided
     if not query:
         return jsonify(gene_list)
-
     pattern = re.compile(re.escape(query), re.IGNORECASE)
     results = [item for item in gene_list if pattern.search(item)]
     
@@ -408,22 +406,17 @@ def generate_go_analysis():
         
         if not selected_cells or not selected_genes:
             return jsonify({"error": "Please select at least one cell and one gene"}), 400
-            
         # Create a context for BioBERT
         context = f"""
         The following analysis focuses on Gene Ontology (GO) Terms and Pathways related to:
         - Selected cell types: {', '.join(selected_cells)}
         - Selected genes: {', '.join(selected_genes)}
-        
-        Gene Ontology terms describe gene functions in three categories:
+                Gene Ontology terms describe gene functions in three categories:
         1. Molecular Function: The biochemical activity of gene products
         2. Biological Process: The larger biological objective accomplished by multiple molecular functions
         3. Cellular Component: Where in the cell the gene product is active
-        
-        Pathways represent collections of genes that work together in specific biological processes.
-        """
-        
-        # Create a question for BioBERT
+                Pathways represent collections of genes that work together in specific biological processes.
+        """# Create a question for BioBERT
         question = f"""
         What are the most significant Gene Ontology terms and pathways associated with these cell types and genes?
         How do these GO terms and pathways relate to the biological functions and processes in these cells?

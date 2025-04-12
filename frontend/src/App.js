@@ -165,10 +165,16 @@ function App() {
                   <Splitter.Panel defaultSize="34%" min="20%" max="50%">
                     <Splitter lazy layout='vertical' style={{ height: "100%" }}>
                       <Splitter.Panel defaultSize="33.33%" min="20%" max="45%">
-                        <GeneRegulation />
+                        <GeneRegulation 
+                          selectedCells={selectedCells}
+                          selectedGenes={selectedGenes}
+                        />
                       </Splitter.Panel>
                       <Splitter.Panel defaultSize="33.33%" min="20%" max="45%">
-                        <StatisticalSignificance />
+                        <StatisticalSignificance 
+                          selectedCells={selectedCells}
+                          selectedGenes={selectedGenes}
+                        />
                       </Splitter.Panel>
                       <Splitter.Panel defaultSize="33.33%" min="20%" max="45%">
                         <GOAnalysis 
@@ -183,10 +189,16 @@ function App() {
               <Splitter.Panel defaultSize="30%" min="20%" max="50%">
                 <Splitter lazy style={{ width: "100%", height: "100%" }}>
                   <Splitter.Panel defaultSize="50%" min="30%" max="70%">
-                    <LogFoldChange />
+                    <LogFoldChange 
+                      selectedCells={selectedCells}
+                      selectedGenes={selectedGenes}
+                    />
                   </Splitter.Panel>
                   <Splitter.Panel defaultSize="50%" min="30%" max="70%">
-                    <CoExpressionNetworks />
+                    <CoExpressionNetworks 
+                      selectedCells={selectedCells}
+                      selectedGenes={selectedGenes}
+                    />
                   </Splitter.Panel>
                 </Splitter>
               </Splitter.Panel>
