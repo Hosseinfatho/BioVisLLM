@@ -6,12 +6,13 @@ import { NMFGOExpressionViewer } from './components/NMFGOExpressionViewer';
 import { GeneExpressionViewer } from './components/GeneExpressionViewer';
 import { PseudoTemporalViewer } from './components/PseudoTemporalViewer';
 import Banner from './components/Banner';
-import GOAnalysis from './components/GOAnalysis';
+import GeneOntology from './components/GeneOntology';
 import StatisticalSignificance from './components/StatisticalSignificance';
 import GeneRegulation from './components/GeneRegulation';
 import LogFoldChange from './components/LogFoldChange';
 import CoExpressionNetworks from './components/CoExpressionNetworks';
 import ModelSelector from './components/ModelSelector';
+import GOAnalysis from './components/GOAnalysis';
 
 function App() {
   const [selectedModel, setSelectedModel] = useState('biobert');
