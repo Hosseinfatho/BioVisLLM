@@ -21,6 +21,7 @@ from process import (
     # get_gene_list,
     # get_specific_gene_expression
 )
+from biobert_service import biobert_service, COMPONENT_CONTEXTS
 import matplotlib.pyplot as plt
 import seaborn as sns
 import scanpy as sc
@@ -381,6 +382,22 @@ def analyze():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/explain_component', methods=['POST'])
+def explain_component():
+    data = request.json
+    component_name = data.get('component_name')
+    
+    if component_name not in COMPONENT_CONTEXTS:
+        return jsonify({"error": "Component not found"}), 404
+        
+    context = COMPONENT_CONTEXTS[component_name]
+    explanation = biobert_service.explain_component(component_name, context)
+    
+    return jsonify({
+        "component": component_name,
+        "explanation": explanation
+    })
 
 if __name__ == "__main__":
     app.run(debug=True, port=5003)

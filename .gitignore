@@ -113,4 +113,74 @@ htmlcov/
 *.ipynb
 
 # TypeScript
-*.tsbuildinfo 
+*.tsbuildinfo
+
+# BioBERT model files
+backend/models/
+backend/cache/
+*.bin
+*.pt
+*.pth
+*.h5
+*.hdf5
+*.ckpt
+*.safetensors
+
+# PyTorch cache
+.cache/
+torch_cache/
+
+# Transformers cache
+transformers_cache/
+
+# Large data files
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.h5ad
+*.zarr
+*.npy
+*.npz
+
+# Environment files
+venv/
+env/
+.env
+.venv
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Node modules
+node_modules/
+
+# Build files
+build/
+dist/
+*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover 

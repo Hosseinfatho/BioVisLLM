@@ -11,8 +11,10 @@ import StatisticalSignificance from './components/StatisticalSignificance';
 import GeneRegulation from './components/GeneRegulation';
 import LogFoldChange from './components/LogFoldChange';
 import CoExpressionNetworks from './components/CoExpressionNetworks';
+import ModelSelector from './components/ModelSelector';
 
 function App() {
+  const [selectedModel, setSelectedModel] = useState('biobert');
   const [cellTypeCoordinatesData, setCellTypeCoordinatesData] = useState({});
   const [selectOptions, setSelectOptions] = useState([]);
   const [samples, setSamples] = useState([]); // [{id: 'sample_id', name: 'sample_id'}, ...]
@@ -88,9 +90,17 @@ function App() {
     fetchAvailableSamples();
   }, []);
 
+  const handleModelChange = (model) => {
+    setSelectedModel(model);
+    if (model === 'gpt') {
+      message.info('GPT model will be available in future updates');
+    }
+  };
+
   return (
     <div className="App">
       <Banner />
+      <ModelSelector onModelChange={handleModelChange} />
       <div className='main'>
         {/* select samples */}
         <div className="selectSamples">
