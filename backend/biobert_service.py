@@ -10,9 +10,10 @@ class BioBERTService:
         self.model = AutoModelForQuestionAnswering.from_pretrained(model_path)
         print("BioBERT initialized successfully!")
         
-    def explain_component(self, component_name, context):
-        # Create a question about the component
-        question = f"What is {component_name} and how does it work in biological data analysis?"
+    def explain_component(self, component_name, context, question=None):
+        # If no specific question is provided, use the default one
+        if question is None:
+            question = f"What is {component_name} and how does it work in biological data analysis?"
         
         # Tokenize inputs
         inputs = self.tokenizer(question, context, return_tensors="pt", truncation=True, max_length=512)

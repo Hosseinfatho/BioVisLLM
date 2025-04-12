@@ -399,5 +399,47 @@ def explain_component():
         "explanation": explanation
     })
 
+@app.route('/generate_go_analysis', methods=['POST'])
+def generate_go_analysis():
+    try:
+        data = request.json
+        selected_cells = data.get('selected_cells', [])[:3]  # Get top 3 cells
+        selected_genes = data.get('selected_genes', [])[:3]  # Get top 3 genes
+        
+        if not selected_cells or not selected_genes:
+            return jsonify({"error": "Please select at least one cell and one gene"}), 400
+            
+        # Create a context for BioBERT
+        context = f"""
+        The following analysis focuses on Gene Ontology (GO) Terms and Pathways related to:
+        - Selected cell types: {', '.join(selected_cells)}
+        - Selected genes: {', '.join(selected_genes)}
+        
+        Gene Ontology terms describe gene functions in three categories:
+        1. Molecular Function: The biochemical activity of gene products
+        2. Biological Process: The larger biological objective accomplished by multiple molecular functions
+        3. Cellular Component: Where in the cell the gene product is active
+        
+        Pathways represent collections of genes that work together in specific biological processes.
+        """
+        
+        # Create a question for BioBERT
+        question = f"""
+        What are the most significant Gene Ontology terms and pathways associated with these cell types and genes?
+        How do these GO terms and pathways relate to the biological functions and processes in these cells?
+        """
+        
+        # Get explanation from BioBERT
+        explanation = biobert_service.explain_component("GeneOntology", context)
+        
+        return jsonify({
+            "selected_cells": selected_cells,
+            "selected_genes": selected_genes,
+            "go_analysis": explanation
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(debug=True, port=5003)

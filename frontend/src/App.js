@@ -12,6 +12,7 @@ import GeneRegulation from './components/GeneRegulation';
 import LogFoldChange from './components/LogFoldChange';
 import CoExpressionNetworks from './components/CoExpressionNetworks';
 import ModelSelector from './components/ModelSelector';
+import GOAnalysis from './components/GOAnalysis';
 
 function App() {
   const [selectedModel, setSelectedModel] = useState('biobert');
@@ -29,6 +30,8 @@ function App() {
   const [cell2cellData, setCell2cellData] = useState({});
   const [cell2cellDataLoading, setCell2cellDataLoading] = useState(false);
   const [selectedRegionGeneExpressionData, setSelectedRegionGeneExpressionData] = useState({});
+  const [selectedCells, setSelectedCells] = useState([]);
+  const [selectedGenes, setSelectedGenes] = useState([]);
 
   // get all aviailable samples
   const fetchAvailableSamples = () => {
@@ -155,6 +158,8 @@ function App() {
                       setNMFGODataLoading={setNMFGODataLoading}
                       NMFclusterCells={NMFclusterCells}
                       setSelectedRegionGeneExpressionData={setSelectedRegionGeneExpressionData}
+                      onCellSelect={setSelectedCells}
+                      onGeneSelect={setSelectedGenes}
                     />
                   </Splitter.Panel>
                   <Splitter.Panel defaultSize="34%" min="20%" max="50%">
@@ -166,7 +171,10 @@ function App() {
                         <StatisticalSignificance />
                       </Splitter.Panel>
                       <Splitter.Panel defaultSize="33.33%" min="20%" max="45%">
-                        <GeneOntology />
+                        <GOAnalysis 
+                          selectedCells={selectedCells}
+                          selectedGenes={selectedGenes}
+                        />
                       </Splitter.Panel>
                     </Splitter>
                   </Splitter.Panel>

@@ -97,7 +97,9 @@ export const MultiSampleViewer = ({
     analyzedRegion,
     setAnalyzedRegion,
     NMFclusterCells,
-    setSelectedRegionGeneExpressionData
+    setSelectedRegionGeneExpressionData,
+    onCellSelect,
+    onGeneSelect
 }) => {
     const [imageSizes, setImageSizes] = useState({});
     const [tileSize] = useState(256);
@@ -1126,6 +1128,18 @@ export const MultiSampleViewer = ({
         sampleOffsets
     ]);
 
+    const handleCellSelection = (cells) => {
+        if (onCellSelect) {
+            onCellSelect(cells);
+        }
+    };
+
+    const handleGeneSelection = (genes) => {
+        if (onGeneSelect) {
+            onGeneSelect(genes);
+        }
+    };
+
     return (
         <div style={{ width: '100%', height: '100%', display: 'flex', borderRight: '2px solid #e8e8e8' }}>
             <div
@@ -1490,3 +1504,5 @@ const GeneSettings = ({ geneList, sampleId, onVisibilityGeneChange, cleanGeneSel
         </div>
     );
 };
+
+export default MultiSampleViewer;
