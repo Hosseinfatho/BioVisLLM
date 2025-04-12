@@ -3,11 +3,14 @@ import { Select, Spin, message, Button, Splitter } from 'antd';
 import './App.css';
 import { MultiSampleViewer } from './components/MultiSampleViewer';
 import { NMFGOExpressionViewer } from './components/NMFGOExpressionViewer';
-import { Cell2CellViewer } from './components/Cell2CellViewer';
-import { Cell2CellViewer2 } from './components/Cell2CellViewer2';
 import { GeneExpressionViewer } from './components/GeneExpressionViewer';
 import { PseudoTemporalViewer } from './components/PseudoTemporalViewer';
-
+import Banner from './components/Banner';
+import GeneOntology from './components/GeneOntology';
+import StatisticalSignificance from './components/StatisticalSignificance';
+import GeneRegulation from './components/GeneRegulation';
+import LogFoldChange from './components/LogFoldChange';
+import CoExpressionNetworks from './components/CoExpressionNetworks';
 
 function App() {
   const [cellTypeCoordinatesData, setCellTypeCoordinatesData] = useState({});
@@ -87,6 +90,7 @@ function App() {
 
   return (
     <div className="App">
+      <Banner />
       <div className='main'>
         {/* select samples */}
         <div className="selectSamples">
@@ -105,7 +109,7 @@ function App() {
         </div>
 
         {/* all views */}
-        <div className="content" style={{ position: "relative" }}>
+        <div className="content" style={{ position: "relative", height: "calc(100vh - 100px)" }}>
           {loading && (
             <div style={{
               position: "absolute",
@@ -124,47 +128,47 @@ function App() {
           )}
 
           {samples.length > 0 ? (
-            <Splitter lazy style={{ width: "100%", height: "100%" }}>
+            <Splitter lazy layout='vertical' style={{ width: "100%", height: "100%" }}>
               <Splitter.Panel defaultSize="70%" min="50%" max="80%">
-                <MultiSampleViewer
-                  setLoading={setLoading}
-                  samples={samples}
-                  cellTypeCoordinatesData={cellTypeCoordinatesData}
-                  cellTypeDir={cellTypeDir}
-                  regions={regions}
-                  setRegions={setRegions}
-                  analyzedRegion={analyzedRegion}
-                  setAnalyzedRegion={setAnalyzedRegion}
-                  setNMFGOData={setNMFGOData}
-                  setNMFGODataLoading={setNMFGODataLoading}
-                  NMFclusterCells={NMFclusterCells}
-                  setSelectedRegionGeneExpressionData={setSelectedRegionGeneExpressionData}
-                />
+                <Splitter lazy style={{ width: "100%", height: "100%" }}>
+                  <Splitter.Panel defaultSize="66%" min="50%" max="80%">
+                    <MultiSampleViewer
+                      setLoading={setLoading}
+                      samples={samples}
+                      cellTypeCoordinatesData={cellTypeCoordinatesData}
+                      cellTypeDir={cellTypeDir}
+                      regions={regions}
+                      setRegions={setRegions}
+                      analyzedRegion={analyzedRegion}
+                      setAnalyzedRegion={setAnalyzedRegion}
+                      setNMFGOData={setNMFGOData}
+                      setNMFGODataLoading={setNMFGODataLoading}
+                      NMFclusterCells={NMFclusterCells}
+                      setSelectedRegionGeneExpressionData={setSelectedRegionGeneExpressionData}
+                    />
+                  </Splitter.Panel>
+                  <Splitter.Panel defaultSize="34%" min="20%" max="50%">
+                    <Splitter lazy layout='vertical' style={{ height: "100%" }}>
+                      <Splitter.Panel defaultSize="33.33%" min="20%" max="45%">
+                        <GeneRegulation />
+                      </Splitter.Panel>
+                      <Splitter.Panel defaultSize="33.33%" min="20%" max="45%">
+                        <StatisticalSignificance />
+                      </Splitter.Panel>
+                      <Splitter.Panel defaultSize="33.33%" min="20%" max="45%">
+                        <GeneOntology />
+                      </Splitter.Panel>
+                    </Splitter>
+                  </Splitter.Panel>
+                </Splitter>
               </Splitter.Panel>
               <Splitter.Panel defaultSize="30%" min="20%" max="50%">
-                <Splitter lazy layout='vertical'>
-                  <Splitter.Panel defaultSize="33%" min="20%" max="45%" style={{ borderBottom: "1px solid #e8e8e8" }}>
-                    {/* <GeneExpressionViewer
-                      data={selectedRegionGeneExpressionData}
-                    /> */}
-                    <NMFGOExpressionViewer 
-                      NMFGOData={NMFGOData}
-                      NMFGODataLoading={NMFGODataLoading}
-                      setNMFclusterCells={setNMFclusterCells}
-                    />
+                <Splitter lazy style={{ width: "100%", height: "100%" }}>
+                  <Splitter.Panel defaultSize="50%" min="30%" max="70%">
+                    <LogFoldChange />
                   </Splitter.Panel>
-                  <Splitter.Panel defaultSize="33%" min="20%" max="45%" style={{ borderBottom: "1px solid #e8e8e8" }}>
-                    <PseudoTemporalViewer />
-                  </Splitter.Panel>
-                  <Splitter.Panel defaultSize="33%" min="20%" max="45%">
-                    {/* <Cell2CellViewer /> */}
-                    <Cell2CellViewer2
-                      regions={regions}
-                      analyzedRegion={analyzedRegion}
-                      cell2cellData={cell2cellData}
-                      setCell2cellData={setCell2cellData}
-                      cell2cellDataLoading={cell2cellDataLoading}
-                    />
+                  <Splitter.Panel defaultSize="50%" min="30%" max="70%">
+                    <CoExpressionNetworks />
                   </Splitter.Panel>
                 </Splitter>
               </Splitter.Panel>
