@@ -49,19 +49,19 @@ The analysis suggests that these genes are tightly regulated in a cell-type spec
                     </div>
                 ) : (
                     <div style={{ textAlign: 'left' }}>
-                        <h3 style={{ textAlign: 'left' }}>Selected Cells:</h3>
-                        <p style={{ textAlign: 'left' }}>{analysis.selected_cells.join(', ')}</p>
-                        
-                        <h3 style={{ textAlign: 'left' }}>Selected Genes:</h3>
-                        <p style={{ textAlign: 'left' }}>{analysis.selected_genes.join(', ')}</p>
-                        
-                        <h3 style={{ textAlign: 'left' }}>Regulation Analysis:</h3>
+
+                        <h3 style={{ textAlign: 'left', marginTop: '0', paddingTop: '0' }}>Regulation Analysis:</h3>
                         <div style={{ 
                             whiteSpace: 'pre-wrap',
                             textAlign: 'justify',
                             textJustify: 'inter-word'
                         }}>
-                            {analysis.regulation_analysis}
+                            {analysis.regulation_analysis.split('\n').map((line, index) => {
+                                if (line.match(/^\d+\.\s+[A-Za-z\s]+:$/) || line.match(/^[A-Za-z\s]+:$/)) {
+                                    return <p key={index}><strong>{line}</strong></p>;
+                                }
+                                return <p key={index}>{line}</p>;
+                            })}
                         </div>
                     </div>
                 )}

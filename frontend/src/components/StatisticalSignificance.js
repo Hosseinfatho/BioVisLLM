@@ -24,10 +24,34 @@ The analysis indicates that the observed expression differences are statisticall
         if (selectedCells.length > 0 && selectedGenes.length > 0) {
             setLoading(true);
             try {
-                // Fetch analysis from backend
-                // Similar to GOAnalysis component
+                const cells = selectedCells.length > 0 ? selectedCells : ['Keratinocyte', 'Fibroblast', 'Melanocyte'];
+                const genes = selectedGenes.length > 0 ? selectedGenes : ['COL1A1', 'KRT14', 'TYR'];
+                
+                // Fetch BioBERT analysis from backend
+                fetch('/analyze_significance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        cells: cells,
+                        genes: genes
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    setAnalysis({
+                        selected_cells: cells,
+                        selected_genes: genes,
+                        significance_analysis: data.analysis
+                    });
+                })
+                .catch(error => {
+                    message.error('Failed to fetch Statistical Significance analysis');
+                    console.error('Error:', error);
+                });
             } catch (error) {
-                message.error('Failed to fetch significance analysis');
+                message.error('Failed to process Statistical Significance analysis');
                 console.error('Error:', error);
             } finally {
                 setLoading(false);
@@ -51,19 +75,18 @@ The analysis indicates that the observed expression differences are statisticall
                     </div>
                 ) : (
                     <div style={{ textAlign: 'left' }}>
-                        <h3 style={{ textAlign: 'left' }}>Selected Cells:</h3>
-                        <p style={{ textAlign: 'left' }}>{analysis.selected_cells.join(', ')}</p>
-                        
-                        <h3 style={{ textAlign: 'left' }}>Selected Genes:</h3>
-                        <p style={{ textAlign: 'left' }}>{analysis.selected_genes.join(', ')}</p>
-                        
-                        <h3 style={{ textAlign: 'left' }}>Significance Analysis:</h3>
+                        <h3 style={{ textAlign: 'left', marginTop: '0', paddingTop: '0' }}>Significance Analysis:</h3>
                         <div style={{ 
                             whiteSpace: 'pre-wrap',
                             textAlign: 'justify',
                             textJustify: 'inter-word'
                         }}>
-                            {analysis.significance_analysis}
+                            {analysis.significance_analysis.split('\n').map((line, index) => {
+                                if (line.match(/^\d+\.\s+[A-Za-z\s]+:$/) || line.match(/^[A-Za-z\s]+\([A-Za-z]+\):$/)) {
+                                    return <p key={index}><strong>{line}</strong></p>;
+                                }
+                                return <p key={index}>{line}</p>;
+                            })}
                         </div>
                     </div>
                 )}

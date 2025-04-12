@@ -6,13 +6,12 @@ import { NMFGOExpressionViewer } from './components/NMFGOExpressionViewer';
 import { GeneExpressionViewer } from './components/GeneExpressionViewer';
 import { PseudoTemporalViewer } from './components/PseudoTemporalViewer';
 import Banner from './components/Banner';
-import GeneOntology from './components/GeneOntology';
+import GOAnalysis from './components/GOAnalysis';
 import StatisticalSignificance from './components/StatisticalSignificance';
 import GeneRegulation from './components/GeneRegulation';
 import LogFoldChange from './components/LogFoldChange';
 import CoExpressionNetworks from './components/CoExpressionNetworks';
 import ModelSelector from './components/ModelSelector';
-import GOAnalysis from './components/GOAnalysis';
 
 function App() {
   const [selectedModel, setSelectedModel] = useState('biobert');
@@ -32,6 +31,9 @@ function App() {
   const [selectedRegionGeneExpressionData, setSelectedRegionGeneExpressionData] = useState({});
   const [selectedCells, setSelectedCells] = useState([]);
   const [selectedGenes, setSelectedGenes] = useState([]);
+
+  console.log('App - selectedCells:', selectedCells);
+  console.log('App - selectedGenes:', selectedGenes);
 
   // get all aviailable samples
   const fetchAvailableSamples = () => {
