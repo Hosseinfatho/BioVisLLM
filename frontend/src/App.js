@@ -7,12 +7,12 @@ import { GeneExpressionViewer } from './components/GeneExpressionViewer';
 import { PseudoTemporalViewer } from './components/PseudoTemporalViewer';
 import Banner from './components/Banner';
 import GeneOntology from './components/GeneOntology';
-import StatisticalSignificance from './components/StatisticalSignificance';
-import GeneRegulation from './components/GeneRegulation';
-import LogFoldChange from './components/LogFoldChange';
-import CoExpressionNetworks from './components/CoExpressionNetworks';
+import SpatialComparison from './components/SpatialComparison';
+import RegionalGeneCellRelationship from './components/GeneRegulation';
+import DiseaseImmuneRelevance from './components/DiseaseImmuneRelevance';
+import GeneCoexpressionInteraction from './components/GeneCoexpressionInteraction';
 import ModelSelector from './components/ModelSelector';
-import GOAnalysis from './components/GOAnalysis';
+import PathwayEnrichment from './components/PathwayEnrichment';
 
 function App() {
   const [selectedModel, setSelectedModel] = useState('biobert');
@@ -168,19 +168,19 @@ function App() {
                   <Splitter.Panel defaultSize="34%" min="20%" max="50%">
                     <Splitter lazy layout='vertical' style={{ height: "100%" }}>
                       <Splitter.Panel defaultSize="33.33%" min="20%" max="45%">
-                        <GeneRegulation 
+                        <RegionalGeneCellRelationship 
                           selectedCells={selectedCells}
                           selectedGenes={selectedGenes}
                         />
                       </Splitter.Panel>
                       <Splitter.Panel defaultSize="33.33%" min="20%" max="45%">
-                        <StatisticalSignificance 
+                        <SpatialComparison 
                           selectedCells={selectedCells}
                           selectedGenes={selectedGenes}
                         />
                       </Splitter.Panel>
                       <Splitter.Panel defaultSize="33.33%" min="20%" max="45%">
-                        <GOAnalysis 
+                        <PathwayEnrichment 
                           selectedCells={selectedCells}
                           selectedGenes={selectedGenes}
                         />
@@ -192,13 +192,13 @@ function App() {
               <Splitter.Panel defaultSize="30%" min="20%" max="50%">
                 <Splitter lazy style={{ width: "100%", height: "100%" }}>
                   <Splitter.Panel defaultSize="50%" min="30%" max="70%">
-                    <LogFoldChange 
+                    <DiseaseImmuneRelevance 
                       selectedCells={selectedCells}
                       selectedGenes={selectedGenes}
                     />
                   </Splitter.Panel>
                   <Splitter.Panel defaultSize="50%" min="30%" max="70%">
-                    <CoExpressionNetworks 
+                    <GeneCoexpressionInteraction 
                       selectedCells={selectedCells}
                       selectedGenes={selectedGenes}
                     />

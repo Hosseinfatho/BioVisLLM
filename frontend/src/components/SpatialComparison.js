@@ -3,39 +3,38 @@ import { Card, Spin, message } from 'antd';
 import ComponentBanner from './ComponentBanner';
 import ComponentExplanation from './ComponentExplanation';
 
-const RegionalGeneCellRelationship = ({ selectedCells, selectedGenes }) => {
+const SpatialComparison = ({ selectedCells, selectedGenes }) => {
     const [analysis, setAnalysis] = useState({
         selected_cells: [],
         selected_genes: [],
-        regulation_analysis: ''
+        significance_analysis: ''
     });
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        console.log('RegionalGeneCellRelationship - Received selectedCells:', selectedCells);
-        console.log('RegionalGeneCellRelationship - Received selectedGenes:', selectedGenes);
+        console.log('SpatialComparison - Received selectedCells:', selectedCells);
+        console.log('SpatialComparison - Received selectedGenes:', selectedGenes);
 
         if (selectedCells && selectedCells.length > 0 && selectedGenes && selectedGenes.length > 0) {
             setLoading(true);
-            // TODO: Implement actual backend fetch logic here
-            // Example: fetch('/analyze_regional_relationship', { ... })
-            // For now, simulate a delay and set placeholder data
+             // TODO: Implement actual backend fetch logic here for spatial comparison
+             // Example: fetch('/analyze_spatial_comparison', { ... })
+             // For now, simulate a delay and set placeholder data
             setTimeout(() => {
-                 setAnalysis({
-                     selected_cells: selectedCells,
-                     selected_genes: selectedGenes,
-                     regulation_analysis: `BioBERT analysis for Regional Gene-Cell Relationship based on ${selectedCells.join(', ')} and ${selectedGenes.join(', ')} goes here.`
-                 });
-                 setLoading(false);
-             }, 1500); // Simulating network delay
-
+                setAnalysis({
+                    selected_cells: selectedCells,
+                    selected_genes: selectedGenes,
+                    significance_analysis: `BioBERT analysis for Spatial Comparison between regions based on ${selectedCells.join(', ')} and ${selectedGenes.join(', ')} goes here. \nIncludes statistical significance (p-values, FDR).`
+                });
+                setLoading(false);
+            }, 1500); // Simulating network delay
         } else {
-             // Clear analysis if no cells/genes are selected
-             setAnalysis({
-                 selected_cells: selectedCells || [],
-                 selected_genes: selectedGenes || [],
-                 regulation_analysis: ''
-             });
+            // Clear analysis if no cells/genes are selected
+            setAnalysis({
+                selected_cells: selectedCells || [],
+                selected_genes: selectedGenes || [],
+                significance_analysis: ''
+            });
             setLoading(false);
         }
     }, [selectedCells, selectedGenes]);
@@ -43,7 +42,8 @@ const RegionalGeneCellRelationship = ({ selectedCells, selectedGenes }) => {
     const formatAnalysisText = (text) => {
         if (!text) return null;
         return text.split('\n').map((line, index) => {
-            if (line.match(/^\d+\.\s+.*?:$/) || line.match(/^[A-Za-z\s]+:/)) { // Bold numbered/titled lines
+             // Bold lines like "1. P-values:" or "Adjusted p-values (FDR):"
+            if (line.match(/^\d+\.\s+.*?:$/) || line.match(/^[A-Za-z\s].*?:$/)) {
                 return <p key={index} style={{ marginTop: '0', paddingTop: '0', marginBottom: '0.5em' }}><strong>{line}</strong></p>;
             }
             return <p key={index} style={{ marginTop: '0', paddingTop: '0', marginBottom: '0.5em' }}>{line}</p>;
@@ -53,10 +53,10 @@ const RegionalGeneCellRelationship = ({ selectedCells, selectedGenes }) => {
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-                <ComponentBanner title="1. Regional Gene-Cell Relationship" />
+                <ComponentBanner title="2. Spatial Comparison Between Regions" />
                 <ComponentExplanation
-                    title="Regional Gene-Cell Relationship"
-                    explanation="The study of genes that show similar expression patterns and may work together or influence each other's activity in biological processes."
+                    title="Spatial Comparison Between Regions"
+                    explanation="Analyzing differences in gene expression or cell composition across distinct spatial areas within a tissue."
                 />
             </div>
             <Card style={{ flex: 1, overflow: 'auto' }}>
@@ -65,7 +65,7 @@ const RegionalGeneCellRelationship = ({ selectedCells, selectedGenes }) => {
                         <Spin size="large" />
                     </div>
                 ) : (
-                    <div style={{ textAlign: 'left', marginTop: '0', paddingTop: '0' }}>
+                     <div style={{ textAlign: 'left', marginTop: '0', paddingTop: '0' }}>
                          <p style={{ textAlign: 'left', marginTop: '0', paddingTop: '0', marginBottom: '0.5em' }}>
                             <strong>Selected Cells:</strong> {analysis.selected_cells.join(', ') || 'None'}
                         </p>
@@ -85,7 +85,7 @@ const RegionalGeneCellRelationship = ({ selectedCells, selectedGenes }) => {
                                     marginTop: '0',
                                     paddingTop: '0'
                                 }}>
-                                    {analysis.regulation_analysis ? formatAnalysisText(analysis.regulation_analysis) : 'No analysis available yet.'}
+                                    {analysis.significance_analysis ? formatAnalysisText(analysis.significance_analysis) : 'No analysis available yet.'}
                                 </div>
                             </>
                         ) : (
@@ -98,4 +98,4 @@ const RegionalGeneCellRelationship = ({ selectedCells, selectedGenes }) => {
     );
 };
 
-export default RegionalGeneCellRelationship; 
+export default SpatialComparison; 
