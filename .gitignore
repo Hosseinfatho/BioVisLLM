@@ -46,9 +46,7 @@ Thumbs.db
 data/
 *.tiff
 *.jpg
-*.png
 *.gif
-*.mp4
 *.avi
 *.mov
 *.h5
