@@ -4,91 +4,68 @@ import { Card, Spin, message } from 'antd';
 import ComponentBanner from './ComponentBanner';
 import ComponentExplanation from './ComponentExplanation';
 
-// Renamed component and updated titles
 const GeneCoexpressionInteraction = ({ selectedCells = [], selectedGenes = [] }) => {
-    const [analysis, setAnalysis] = useState({
-        selected_cells: [],
-        selected_genes: [],
-        coexpression_analysis: '' // Keep state variable name or change if desired
+    const [analysisState, setAnalysisState] = useState({
+        // State to store the analysis result
+        analysis_text: ''
     });
     const [loading, setLoading] = useState(false);
 
+    // Determine top 5 for potential analysis and display
+    const top5Cells = (selectedCells || []).slice(0, 5);
+    const top5Genes = (selectedGenes || []).slice(0, 5);
+
     useEffect(() => {
-        console.log('GeneCoexpressionInteraction - Received selectedCells:', selectedCells);
-        console.log('GeneCoexpressionInteraction - Received selectedGenes:', selectedGenes);
+        console.log('GeneCoexpressionInteraction - Effect Triggered. Top 5 Cells:', top5Cells);
+        console.log('GeneCoexpressionInteraction - Effect Triggered. Top 5 Genes:', top5Genes);
 
-        if (selectedCells && selectedCells.length > 0 && selectedGenes && selectedGenes.length > 0) {
+        if (top5Cells.length > 0 && top5Genes.length > 0) {
             setLoading(true);
-            try {
-                const cells = selectedCells; // Use all selected
-                const genes = selectedGenes; // Use all selected
+            // Clear previous analysis text
+            setAnalysisState({ analysis_text: '' });
 
-                console.log('GeneCoexpressionInteraction - Sending cells:', cells);
-                console.log('GeneCoexpressionInteraction - Sending genes:', genes);
+            // --- Fetch analysis from backend ---
+            // TODO: Update endpoint if necessary for coexpression/interaction analysis
+            const endpoint = '/analyze_coexpression'; // Make sure this matches your route in server.py
+            console.log(`Fetching ${endpoint} with top ${top5Cells.length} cells and top ${top5Genes.length} genes.`);
 
-                 // TODO: Update endpoint if necessary for coexpression/interaction analysis
-                fetch('/analyze_coexpression', { // Keep endpoint or update
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cells, genes })
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    // Check if response is JSON before parsing
-                    const contentType = response.headers.get("content-type");
-                    if (contentType && contentType.indexOf("application/json") !== -1) {
-                        return response.json();
-                    } else {
-                        return response.text().then(text => { throw new Error("Received non-JSON response: " + text) });
-                    }
-                 })
-                .then(data => {
-                    console.log('GeneCoexpressionInteraction - Received data:', data);
-                     // Assuming backend returns { selected_cells, selected_genes, coexpression_analysis }
-                    setAnalysis({
-                        selected_cells: data.selected_cells || cells, // Use data if available, else fallback
-                        selected_genes: data.selected_genes || genes, // Use data if available, else fallback
-                        coexpression_analysis: data.analysis || 'Analysis data missing from response.'
-                    });
-                })
-                .catch(error => {
-                    message.error(`Failed to fetch Gene Co-expression/Interaction analysis: ${error.message}`);
-                    console.error('Error:', error);
-                    setAnalysis({ // Clear analysis on error
-                         selected_cells: cells,
-                         selected_genes: genes,
-                         coexpression_analysis: ''
-                     });
-                })
-                .finally(() => {
-                    setLoading(false);
-                });
-            } catch (error) {
-                message.error('Failed to process Gene Co-expression/Interaction analysis');
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cells: top5Cells, genes: top5Genes }) // Send top 5
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) return response.json();
+                throw new Error("Received non-JSON response");
+            })
+            .then(data => {
+                console.log('GeneCoexpressionInteraction - Received data:', data);
+                // Assuming backend returns { analysis: "Paragraph..." } or { coexpression_analysis: "..." }
+                setAnalysisState({ analysis_text: data.analysis || data.coexpression_analysis || 'Analysis paragraph not found in response.' });
+            })
+            .catch(error => {
+                message.error(`Failed to fetch Gene Co-expression analysis: ${error.message}`);
                 console.error('Error:', error);
-                setAnalysis({ // Clear analysis on error
-                     selected_cells: selectedCells || [],
-                     selected_genes: selectedGenes || [],
-                     coexpression_analysis: ''
-                 });
+                setAnalysisState({ analysis_text: '' }); // Clear analysis on error
+            })
+            .finally(() => {
                 setLoading(false);
-            }
+            });
+            // --- End fetch ---
+
         } else {
-             // Clear analysis if no cells/genes selected
-             setAnalysis({
-                 selected_cells: selectedCells || [],
-                 selected_genes: selectedGenes || [],
-                 coexpression_analysis: ''
-             });
-            console.log('GeneCoexpressionInteraction - No cells or genes selected');
-            setLoading(false); // Ensure loading is set to false
+             // No fetch needed, clear analysis text
+             setAnalysisState({ analysis_text: '' });
+             setLoading(false);
+             console.log('GeneCoexpressionInteraction - Not enough cells or genes selected.');
         }
+    // Depend on the original props
     }, [selectedCells, selectedGenes]);
 
     const formatAnalysisText = (text) => {
-        if (!text) return null;
+        if (!text) return <p>No analysis available yet.</p>;
         return text.split('\n').map((line, index) => {
              // Bold lines starting with number/dot or just text followed by colon
             if (line.match(/^\d+\.\s+.*?:$/) || line.match(/^[A-Za-z\s]+:/)) {
@@ -105,7 +82,7 @@ const GeneCoexpressionInteraction = ({ selectedCells = [], selectedGenes = [] })
                 <ComponentBanner title="4. Gene Co-expression and Interaction" />
                 <ComponentExplanation
                     title="Gene Co-expression and Interaction"
-                    explanation="Identifies groups of genes with correlated expression patterns (co-expression) across spatial regions and explores potential gene-gene interactions (e.g., using STRING DB)." // Update explanation
+                    explanation="Identifies groups of genes with correlated expression patterns (co-expression) across spatial regions and explores potential gene-gene interactions (e.g., using STRING DB), based on top 5 selected cells and top 5 selected genes." // Updated explanation
                 />
             </div>
             <Card style={{ flex: 1, overflow: 'auto' }}>
@@ -115,17 +92,19 @@ const GeneCoexpressionInteraction = ({ selectedCells = [], selectedGenes = [] })
                     </div>
                 ) : (
                      <div style={{ textAlign: 'left', marginTop: '0', paddingTop: '0' }}>
+                         {/* Display top 5 directly from props */}
                         <p style={{ textAlign: 'left', marginTop: '0', paddingTop: '0', marginBottom: '0.5em' }}>
-                            <strong>Selected Cells:</strong> {analysis.selected_cells.join(', ') || 'None'}
+                            <strong>Top 5 Selected Cells:</strong> {top5Cells.join(', ') || 'None'}
                         </p>
                         <p style={{ textAlign: 'left', marginTop: '0', paddingTop: '0', marginBottom: '1em' }}>
-                            <strong>Selected Genes:</strong> {analysis.selected_genes.join(', ') || 'None'}
+                            <strong>Top 5 Selected Genes:</strong> {top5Genes.join(', ') || 'None'}
                         </p>
 
-                        {analysis.selected_cells.length > 0 && analysis.selected_genes.length > 0 ? (
+                        {/* Show analysis section only if there are selections */}
+                        {(top5Cells.length > 0 && top5Genes.length > 0) ? (
                             <>
                                 <h3 style={{ textAlign: 'left', fontWeight: 'bold', marginTop: '0', paddingTop: '0', marginBottom: '0.5em' }}>
-                                    Analysis:
+                                    BioBERT Analysis:
                                 </h3>
                                 <div style={{
                                     whiteSpace: 'pre-wrap',
@@ -134,7 +113,8 @@ const GeneCoexpressionInteraction = ({ selectedCells = [], selectedGenes = [] })
                                     marginTop: '0',
                                     paddingTop: '0'
                                 }}>
-                                    {analysis.coexpression_analysis ? formatAnalysisText(analysis.coexpression_analysis) : 'No analysis available yet.'}
+                                     {/* Use analysis state and formatter */}
+                                    {formatAnalysisText(analysisState.analysis_text)}
                                 </div>
                              </>
                         ) : (
@@ -147,4 +127,4 @@ const GeneCoexpressionInteraction = ({ selectedCells = [], selectedGenes = [] })
     );
 };
 
-export default GeneCoexpressionInteraction; // Update export name
+export default GeneCoexpressionInteraction;

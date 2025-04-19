@@ -1,46 +1,73 @@
+// frontend/src/components/SpatialComparison.js
 import React, { useState, useEffect } from 'react';
 import { Card, Spin, message } from 'antd';
 import ComponentBanner from './ComponentBanner';
 import ComponentExplanation from './ComponentExplanation';
 
-const SpatialComparison = ({ selectedCells, selectedGenes }) => {
-    const [analysis, setAnalysis] = useState({
-        selected_cells: [],
-        selected_genes: [],
-        significance_analysis: ''
+const SpatialComparison = ({ selectedCells = [], selectedGenes = [] }) => {
+    const [analysisState, setAnalysisState] = useState({
+        // State to store the analysis result
+        analysis_text: ''
     });
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        console.log('SpatialComparison - Received selectedCells:', selectedCells);
-        console.log('SpatialComparison - Received selectedGenes:', selectedGenes);
+    // Determine top 5 for potential analysis and display
+    const top5Cells = (selectedCells || []).slice(0, 5);
+    const top5Genes = (selectedGenes || []).slice(0, 5);
 
-        if (selectedCells && selectedCells.length > 0 && selectedGenes && selectedGenes.length > 0) {
+    useEffect(() => {
+        console.log('SpatialComparison - Effect Triggered. Top 5 Cells:', top5Cells);
+        console.log('SpatialComparison - Effect Triggered. Top 5 Genes:', top5Genes);
+
+        if (top5Cells.length > 0 && top5Genes.length > 0) {
             setLoading(true);
-             // TODO: Implement actual backend fetch logic here for spatial comparison
-             // Example: fetch('/analyze_spatial_comparison', { ... })
-             // For now, simulate a delay and set placeholder data
-            setTimeout(() => {
-                setAnalysis({
-                    selected_cells: selectedCells,
-                    selected_genes: selectedGenes,
-                    significance_analysis: `BioBERT analysis for Spatial Comparison between regions based on ${selectedCells.join(', ')} and ${selectedGenes.join(', ')} goes here. \nIncludes statistical significance (p-values, FDR).`
-                });
+            // Clear previous analysis text
+            setAnalysisState({ analysis_text: '' });
+
+            // --- Fetch analysis from backend ---
+            // TODO: Replace with your actual backend endpoint for spatial comparison
+            const endpoint = '/analyze_spatial_comparison'; // Make sure this matches your new route in server.py
+            console.log(`Fetching ${endpoint} with top ${top5Cells.length} cells and top ${top5Genes.length} genes.`);
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cells: top5Cells, genes: top5Genes }) // Send top 5
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) return response.json();
+                throw new Error("Received non-JSON response");
+            })
+            .then(data => {
+                console.log('SpatialComparison - Received data:', data);
+                // Assuming backend returns { analysis: "Paragraph..." }
+                // Use significance_analysis key if backend sends that, otherwise use analysis
+                setAnalysisState({ analysis_text: data.analysis || data.significance_analysis || 'Analysis paragraph not found in response.' });
+            })
+            .catch(error => {
+                message.error(`Failed to fetch Spatial Comparison analysis: ${error.message}`);
+                console.error('Error:', error);
+                setAnalysisState({ analysis_text: '' }); // Clear analysis on error
+            })
+            .finally(() => {
                 setLoading(false);
-            }, 1500); // Simulating network delay
-        } else {
-            // Clear analysis if no cells/genes are selected
-            setAnalysis({
-                selected_cells: selectedCells || [],
-                selected_genes: selectedGenes || [],
-                significance_analysis: ''
             });
-            setLoading(false);
+            // --- End fetch ---
+
+        } else {
+             // No fetch needed, clear analysis text
+             setAnalysisState({ analysis_text: '' });
+             setLoading(false);
+             console.log('SpatialComparison - Not enough cells or genes selected.');
         }
+    // Depend on the original props
     }, [selectedCells, selectedGenes]);
 
-    const formatAnalysisText = (text) => {
-        if (!text) return null;
+     // Format analysis text, bolding specific lines
+     const formatAnalysisText = (text) => {
+        if (!text) return <p>No analysis available yet.</p>;
         return text.split('\n').map((line, index) => {
              // Bold lines like "1. P-values:" or "Adjusted p-values (FDR):"
             if (line.match(/^\d+\.\s+.*?:$/) || line.match(/^[A-Za-z\s].*?:$/)) {
@@ -56,7 +83,7 @@ const SpatialComparison = ({ selectedCells, selectedGenes }) => {
                 <ComponentBanner title="2. Spatial Comparison Between Regions" />
                 <ComponentExplanation
                     title="Spatial Comparison Between Regions"
-                    explanation="Analyzing differences in gene expression or cell composition across distinct spatial areas within a tissue."
+                    explanation="Compares gene expression patterns and statistical significance (p-value, FDR) between different selected spatial regions, based on top 5 selected cells and top 5 selected genes." // Updated explanation
                 />
             </div>
             <Card style={{ flex: 1, overflow: 'auto' }}>
@@ -66,17 +93,19 @@ const SpatialComparison = ({ selectedCells, selectedGenes }) => {
                     </div>
                 ) : (
                      <div style={{ textAlign: 'left', marginTop: '0', paddingTop: '0' }}>
+                         {/* Display top 5 directly from props */}
                          <p style={{ textAlign: 'left', marginTop: '0', paddingTop: '0', marginBottom: '0.5em' }}>
-                            <strong>Selected Cells:</strong> {analysis.selected_cells.join(', ') || 'None'}
+                            <strong>Top 5 Selected Cells:</strong> {top5Cells.join(', ') || 'None'}
                         </p>
                         <p style={{ textAlign: 'left', marginTop: '0', paddingTop: '0', marginBottom: '1em' }}>
-                            <strong>Selected Genes:</strong> {analysis.selected_genes.join(', ') || 'None'}
+                            <strong>Top 5 Selected Genes:</strong> {top5Genes.join(', ') || 'None'}
                         </p>
 
-                        {analysis.selected_cells.length > 0 && analysis.selected_genes.length > 0 ? (
+                        {/* Show analysis section only if there are selections */}
+                        {(top5Cells.length > 0 && top5Genes.length > 0) ? (
                             <>
                                 <h3 style={{ textAlign: 'left', fontWeight: 'bold', marginTop: '0', paddingTop: '0', marginBottom: '0.5em' }}>
-                                    Analysis:
+                                    BioBERT Analysis:
                                 </h3>
                                 <div style={{
                                     whiteSpace: 'pre-wrap',
@@ -85,7 +114,7 @@ const SpatialComparison = ({ selectedCells, selectedGenes }) => {
                                     marginTop: '0',
                                     paddingTop: '0'
                                 }}>
-                                    {analysis.significance_analysis ? formatAnalysisText(analysis.significance_analysis) : 'No analysis available yet.'}
+                                    {formatAnalysisText(analysisState.analysis_text)}
                                 </div>
                             </>
                         ) : (
@@ -98,4 +127,4 @@ const SpatialComparison = ({ selectedCells, selectedGenes }) => {
     );
 };
 
-export default SpatialComparison; 
+export default SpatialComparison;

@@ -44,133 +44,6 @@ CORS(app)  # Enable CORS for all routes
 # Ensure static directories exist for storing figures
 os.makedirs(os.path.join(app.static_folder, 'figures'), exist_ok=True)
 
-# Cache for DEAPLOG results
-@lru_cache(maxsize=10)
-def get_cached_deaplog_results(sample_percent, step):
-    """Cached version of DEAPLOG results"""
-    try:
-        # Path to the DEAPLOG script and data
-        script_path = os.path.join(workspace_root, 'Python', 'DEAPLOG.py')
-        data_path = os.path.join(workspace_root, 'Data', 'skin_TXK6Z4X_A1_processed', 'tmap', 'weighted_by_area_celltypist_cells_adata.h5')
-        
-        print(f"Debug - Parameters:")
-        print(f"sample_percent: {sample_percent}")
-        print(f"step: {step}")
-        print(f"workspace_root: {workspace_root}")
-        print(f"script_path: {script_path}")
-        print(f"data_path: {data_path}")
-        
-        # Ensure the script exists
-        if not os.path.exists(script_path):
-            error_msg = f'DEAPLOG script not found at: {script_path}'
-            print(f"Error: {error_msg}")
-            return {'error': error_msg}, 500
-
-        # Ensure the data file exists
-        if not os.path.exists(data_path):
-            error_msg = f'Data file not found at: {data_path}'
-            print(f"Error: {error_msg}")
-            return {'error': error_msg}, 500
-
-        # Run the DEAPLOG script
-        cmd = ['python', script_path, '--sample_percent', str(sample_percent), '--step', str(step), '--data_path', data_path]
-        print(f"Debug - Running command: {' '.join(cmd)}")
-        
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            cwd=workspace_root
-        )
-        
-        print("Debug - Command output:")
-        print("STDOUT:", result.stdout)
-        print("STDERR:", result.stderr)
-        
-        if result.returncode != 0:
-            error_msg = f'DEAPLOG process failed with code {result.returncode}: {result.stderr}'
-            print(f"Error: {error_msg}")
-            return {'error': error_msg}, 500
-            
-        # Parse JSON output
-        try:
-            output_lines = result.stdout.strip().split('\n')
-            json_data = None
-            for line in reversed(output_lines):
-                if line.strip().startswith('{'):
-                    try:
-                        json_data = json.loads(line)
-                        break
-                    except json.JSONDecodeError:
-                        continue
-                        
-            if not json_data:
-                error_msg = 'No valid JSON data found in DEAPLOG output'
-                print(f"Error: {error_msg}")
-                return {'error': error_msg}, 500
-                
-            print("Debug - Parsed JSON data:", json_data)
-            return json_data
-            
-        except Exception as e:
-            error_msg = f'Error parsing DEAPLOG output: {str(e)}'
-            print(f"Error: {error_msg}")
-            return {'error': error_msg}, 500
-            
-    except Exception as e:
-        error_msg = f'Internal server error: {str(e)}'
-        print(f"Error: {error_msg}")
-        return {'error': error_msg}, 500
-
-@app.route('/test-image')
-def test_image():
-    """Test endpoint to check available images in the figures directory"""
-    try:
-        # Get the absolute path to the figures directory
-        figures_dir = os.path.join(workspace_root, 'Python', 'figures')
-        print(f"Checking figures directory: {figures_dir}")
-        
-        # Check if the directory exists
-        if not os.path.exists(figures_dir):
-            print(f"Figures directory not found: {figures_dir}")
-            return jsonify({'images': []})
-            
-        # List all PNG files in the directory
-        images = [f for f in os.listdir(figures_dir) if f.endswith('.png')]
-        print(f"Found images: {images}")
-        
-        return jsonify({'images': images})
-    except Exception as e:
-        print(f"Error listing images: {str(e)}")
-        return jsonify({'images': []})
-
-@app.route('/figures/<path:filename>')
-def serve_figure(filename):
-    """Serve figure files from the figures directory"""
-    try:
-        # Get the absolute path to the figures directory
-        figures_dir = os.path.join(workspace_root, 'Python', 'figures')
-        print(f"Serving figure from: {figures_dir}")
-        
-        # Construct the full path to the requested file
-        file_path = os.path.join(figures_dir, filename)
-        print(f"Requested file path: {file_path}")
-        
-        # Check if the file exists
-        if not os.path.exists(file_path):
-            print(f"File not found: {file_path}")
-            return jsonify({'error': 'Image not found'}), 404
-            
-        # Serve the file with no caching
-        response = send_file(file_path)
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
-        return response
-    except Exception as e:
-        print(f"Error serving figure: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
 @app.route('/', methods=['GET'])
 def get_helloword():
     """Basic test endpoint"""
@@ -301,62 +174,7 @@ def get_specific_gene_expression_route():
     bin_size = request.json['bin_size']
     gene_name = request.json['gene_name']
     return jsonify(get_specific_gene_expression(bin_size, gene_name).to_dict(orient='records'))
-
-@app.route('/get_deaplog_results', methods=['GET'])
-def get_deaplog_results():
-    try:
-        sample_percent = request.args.get('sample_percent', default=0.01, type=float)
-        step = request.args.get('step', default=0, type=int)
-        
-        # Get cached results
-        results = get_cached_deaplog_results(sample_percent, step)
-        
-        # If results is a tuple (error case), return it directly
-        if isinstance(results, tuple):
-            return jsonify(results[0]), results[1]
-            
-        return jsonify(results)
-        
-    except Exception as e:
-        error_msg = f'Internal server error: {str(e)}'
-        print(f"Error: {error_msg}")
-        return jsonify({'error': error_msg}), 500
-
-@app.route('/run_deaplog', methods=['POST'])
-def run_deaplog():
-    try:
-        # Get parameters from request
-        data = request.get_json()
-        sample_percent = float(data.get('sample_percent', 0.1))
-        
-        # Run DEAPLOG analysis
-        results = run_deaplog_analysis(adata, sample_percent)
-        
-        # Save results to files
-        with open('static/deaplog_results.json', 'w') as f:
-            json.dump(results, f)
-        
-        # Save UMAP plot
-        plt.figure(figsize=(10, 10))
-        sc.pl.umap(adata, color='leiden', save='_deaplog.png')
-        
-        # Save PAGA plot
-        plt.figure(figsize=(10, 10))
-        sc.pl.paga(adata, save='_deaplog.png')
-        
-        return jsonify({
-            'status': 'success',
-            'message': 'DEAPLOG analysis completed successfully',
-            'results': results
-        })
-        
-    except Exception as e:
-        print(f"Error in DEAPLOG analysis: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
-
+ 
 @app.route('/api/analyze', methods=['POST'])
 def analyze():
     """Run DEAPLOG analysis on the provided data"""
@@ -433,6 +251,166 @@ def generate_go_analysis():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+def get_regional_relationship_analysis(cells, genes, model, tokenizer):
+    # ---- Placeholder for your actual BioBERT logic ----
+    # 1. Construct a prompt/query using the cells and genes.
+    #    Example prompt: "Analyze the relationship between genes [gene1, gene2,...] and cell types [cell1, cell2,...] in the selected region."
+    prompt = f"Analyze the relationship between genes {genes} and cell types {cells} in the selected region."
+
+    # 2. Use the tokenizer and model to generate text based on the prompt.
+    #    This is a simplified example; actual usage depends on the specific BioBERT task (e.g., question answering, text generation)
+    # inputs = tokenizer(prompt, return_tensors="pt")
+    # outputs = model.generate(**inputs) # Or model(**inputs) depending on model type
+    # generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+    # --- Replace with your actual BioBERT generation ---
+    generated_text = f"Based on BioBERT analysis, the genes {', '.join(genes)} show significant association with cell types {', '.join(cells)} within the context of the selected region. [More detailed BioBERT output specific to regional relationships]."
+    # --- End Placeholder ---
+
+    return generated_text
+
+@app.route('/analyze_regional_relationship', methods=['POST'])
+def handle_regional_relationship():
+    try:
+        data = request.get_json()
+        if not data or 'cells' not in data or 'genes' not in data:
+            return jsonify({"error": "Missing 'cells' or 'genes' in request"}), 400
+
+        cells = data['cells']
+        genes = data['genes']
+
+        # Ensure cells and genes are lists (basic validation)
+        if not isinstance(cells, list) or not isinstance(genes, list):
+             return jsonify({"error": "'cells' and 'genes' must be lists"}), 400
+
+        print(f"Backend received for /analyze_regional_relationship: cells={cells}, genes={genes}")
+
+        # Call your BioBERT analysis function
+        # You might need to pass your loaded model/tokenizer here
+        analysis_paragraph = get_regional_relationship_analysis(cells, genes, None, None) # Replace None with actual model/tokenizer if needed
+
+        # Return the result as JSON
+        return jsonify({"analysis": analysis_paragraph})
+
+    except Exception as e:
+        print(f"Error in /analyze_regional_relationship: {e}")
+        # Return a generic server error
+        return jsonify({"error": "An internal server error occurred"}), 500
+
+# Placeholder analysis functions (replace with actual BioBERT logic)
+# -----------------------------------------------------------------
+
+def get_spatial_comparison_analysis(cells, genes, model, tokenizer):
+    prompt = f"Analyze the spatial comparison between regions focusing on genes {genes} and cell types {cells}, including statistical significance (p-values, FDR)."
+    # --- Replace with your actual BioBERT generation ---
+    generated_text = f"BioBERT spatial comparison analysis for genes {', '.join(genes)} and cells {', '.join(cells)}: [Details on expression differences, p-values, FDR]."
+    # --- End Placeholder ---
+    return generated_text
+
+def get_pathway_enrichment_analysis(cells, genes, model, tokenizer):
+    prompt = f"Perform pathway and functional enrichment analysis (GO, KEGG, Reactome) for genes {genes} in the context of cell types {cells}."
+    # --- Replace with your actual BioBERT generation ---
+    generated_text = f"BioBERT pathway enrichment analysis for genes {', '.join(genes)} and cells {', '.join(cells)}: [Details on enriched GO terms, pathways, and their significance]."
+    # --- End Placeholder ---
+    return generated_text
+
+def get_coexpression_analysis(cells, genes, model, tokenizer):
+    prompt = f"Analyze gene co-expression patterns and potential interactions for genes {genes} across cell types {cells}."
+    # --- Replace with your actual BioBERT generation ---
+    generated_text = f"BioBERT co-expression and interaction analysis for genes {', '.join(genes)} and cells {', '.join(cells)}: [Details on co-expression clusters and potential interactions]."
+    # --- End Placeholder ---
+    return generated_text
+
+def get_disease_relevance_analysis(cells, genes, model, tokenizer):
+    prompt = f"Analyze the disease or immune relevance of genes {genes} and their spatial patterns in cell types {cells}."
+    # --- Replace with your actual BioBERT generation ---
+    generated_text = f"BioBERT disease/immune relevance analysis for genes {', '.join(genes)} and cells {', '.join(cells)}: [Details on links to diseases, immune infiltration, etc.]."
+    # --- End Placeholder ---
+    return generated_text
+
+# New Flask Routes for Analysis Components
+# -----------------------------------------
+
+@app.route('/analyze_spatial_comparison', methods=['POST'])
+def handle_spatial_comparison():
+    try:
+        data = request.get_json()
+        if not data or 'cells' not in data or 'genes' not in data:
+            return jsonify({"error": "Missing 'cells' or 'genes' in request"}), 400
+        cells = data['cells']
+        genes = data['genes']
+        if not isinstance(cells, list) or not isinstance(genes, list):
+             return jsonify({"error": "'cells' and 'genes' must be lists"}), 400
+        print(f"Backend received for /analyze_spatial_comparison: cells={cells}, genes={genes}")
+        # Replace None with actual model/tokenizer if needed
+        analysis_paragraph = get_spatial_comparison_analysis(cells, genes, None, None)
+        return jsonify({"analysis": analysis_paragraph})
+    except Exception as e:
+        print(f"Error in /analyze_spatial_comparison: {e}")
+        return jsonify({"error": "An internal server error occurred"}), 500
+
+@app.route('/analyze_pathway_enrichment', methods=['POST'])
+def handle_pathway_enrichment():
+    # Note: Frontend might still be using /generate_go_analysis.
+    # If so, either update frontend or reuse the logic from generate_go_analysis here.
+    # This route provides a dedicated endpoint.
+    try:
+        data = request.get_json()
+        if not data or 'cells' not in data or 'genes' not in data:
+            return jsonify({"error": "Missing 'cells' or 'genes' in request"}), 400
+        cells = data['cells']
+        genes = data['genes']
+        if not isinstance(cells, list) or not isinstance(genes, list):
+             return jsonify({"error": "'cells' and 'genes' must be lists"}), 400
+        print(f"Backend received for /analyze_pathway_enrichment: cells={cells}, genes={genes}")
+        # Replace None with actual model/tokenizer if needed
+        analysis_paragraph = get_pathway_enrichment_analysis(cells, genes, None, None)
+        return jsonify({"analysis": analysis_paragraph})
+    except Exception as e:
+        print(f"Error in /analyze_pathway_enrichment: {e}")
+        return jsonify({"error": "An internal server error occurred"}), 500
+
+@app.route('/analyze_coexpression', methods=['POST'])
+def handle_coexpression():
+    try:
+        data = request.get_json()
+        if not data or 'cells' not in data or 'genes' not in data:
+            return jsonify({"error": "Missing 'cells' or 'genes' in request"}), 400
+        cells = data['cells']
+        genes = data['genes']
+        if not isinstance(cells, list) or not isinstance(genes, list):
+             return jsonify({"error": "'cells' and 'genes' must be lists"}), 400
+        print(f"Backend received for /analyze_coexpression: cells={cells}, genes={genes}")
+        # Replace None with actual model/tokenizer if needed
+        analysis_paragraph = get_coexpression_analysis(cells, genes, None, None)
+        return jsonify({"analysis": analysis_paragraph})
+    except Exception as e:
+        print(f"Error in /analyze_coexpression: {e}")
+        return jsonify({"error": "An internal server error occurred"}), 500
+
+@app.route('/analyze_disease_relevance', methods=['POST'])
+def handle_disease_relevance():
+    # Note: Frontend might still be using /analyze_logfc.
+    # If so, either update frontend or reuse the logic from that endpoint here.
+    # This route provides a dedicated endpoint.
+    try:
+        data = request.get_json()
+        if not data or 'cells' not in data or 'genes' not in data:
+            return jsonify({"error": "Missing 'cells' or 'genes' in request"}), 400
+        cells = data['cells']
+        genes = data['genes']
+        if not isinstance(cells, list) or not isinstance(genes, list):
+             return jsonify({"error": "'cells' and 'genes' must be lists"}), 400
+        print(f"Backend received for /analyze_disease_relevance: cells={cells}, genes={genes}")
+        # Replace None with actual model/tokenizer if needed
+        analysis_paragraph = get_disease_relevance_analysis(cells, genes, None, None)
+        return jsonify({"analysis": analysis_paragraph})
+    except Exception as e:
+        print(f"Error in /analyze_disease_relevance: {e}")
+        return jsonify({"error": "An internal server error occurred"}), 500
+
+# --- End of new routes and functions ---
 
 if __name__ == "__main__":
     app.run(debug=True, port=5003)

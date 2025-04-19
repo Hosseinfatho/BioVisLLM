@@ -175,6 +175,24 @@ export const MultiSampleViewer = ({
         setVisibleCellTypes(initialStates.visibleCellTypes);
     }, [samples, cellTypeDir]);
 
+    // Effect to update selected cells in App.js whenever visibleCellTypes changes
+    useEffect(() => {
+        if (onCellSelect) {
+            // Aggregate visible cell types across all samples
+            const allVisibleTypes = Object.values(visibleCellTypes)
+                .flatMap(sampleVisibility =>
+                    Object.entries(sampleVisibility)
+                        .filter(([_, isVisible]) => isVisible)
+                        .map(([cellType, _]) => cellType)
+                );
+
+            // Remove duplicates and pass up
+            const uniqueVisibleTypes = Array.from(new Set(allVisibleTypes));
+            console.log('MultiSampleViewer: Calling onCellSelect with:', uniqueVisibleTypes);
+            onCellSelect(uniqueVisibleTypes);
+        }
+    }, [visibleCellTypes, onCellSelect]);
+
     // get image sizes for all samples
     useEffect(() => {
         const fetchImageSizes = () => {
@@ -585,7 +603,14 @@ export const MultiSampleViewer = ({
         return points;
     }
 
-    const collapseItems = samples.map((sample) => ({
+    const handleGeneSelectionFromChild = useCallback((selectedGeneList) => {
+        console.log('MultiSampleViewer: Calling onGeneSelect with:', selectedGeneList);
+        if (onGeneSelect) {
+            onGeneSelect(selectedGeneList);
+        }
+    }, [onGeneSelect]);
+
+    const collapseItems = useMemo(() => samples.map((sample) => ({
         key: sample.id,
         label: sample.name,
         children: (
@@ -611,10 +636,10 @@ export const MultiSampleViewer = ({
                                 [sample.id]: { ...prev[sample.id], [type]: color }
                             }));
                         }}
-                        onVisibilityCellTypeChange={(type, visible) => {
+                        onVisibilityCellTypeChange={(type, isVisible) => {
                             setVisibleCellTypes(prev => ({
                                 ...prev,
-                                [sample.id]: { ...prev[sample.id], [type]: visible }
+                                [sample.id]: { ...prev[sample.id], [type]: isVisible }
                             }));
                         }}
                     />
@@ -622,14 +647,14 @@ export const MultiSampleViewer = ({
                     <GeneSettings
                         geneList={geneList[sample.id] || {}}
                         sampleId={sample.id}
-                        onVisibilityGeneChange={onVisibilityGeneChange}
+                        onGeneSelectionChange={handleGeneSelectionFromChild}
                         cleanGeneSelection={cleanGeneSelection}
                         confirmKosaraPlot={confirmKosaraPlot}
                     />
                 )}
             </>
         )
-    }));
+    })), [samples, cellTypeDir, cellTypeCoordinatesData, colorMaps, visibleCellTypes, radioCellGeneModes, geneList, handleGeneSelectionFromChild, cleanGeneSelection, confirmKosaraPlot]);
 
     // TileLayer
     const generateTileLayers = useCallback(() => {
@@ -1027,6 +1052,12 @@ export const MultiSampleViewer = ({
                 },
                 selectedFeatureIndexes: [],
                 onEdit: ({ updatedData }) => {
+                    console.log('MultiSampleViewer: _onEdit triggered');
+                    console.log('Updated Data Features:', updatedData?.features);
+
+                    const selectedCellTypes = updatedData?.features?.map(f => f.properties.cell_type) || [];
+                    console.log('MultiSampleViewer: Calling onCellSelect with:', selectedCellTypes);
+
                     handleRegionUpdate(sample.id, updatedData);
                 },
                 visible: isDrawingActive && sample.id === activeDrawingSample,
@@ -1460,8 +1491,9 @@ const CellTypeSettings = ({
 };
 
 // gene names display
-const GeneSettings = ({ geneList, sampleId, onVisibilityGeneChange, cleanGeneSelection, confirmKosaraPlot }) => {
+const GeneSettings = ({ geneList, sampleId, onGeneSelectionChange, cleanGeneSelection, confirmKosaraPlot }) => {
     const [searchText, setSearchText] = useState('');
+    const [currentlySelectedGenes, setCurrentlySelectedGenes] = useState([]);
 
     const filteredGenes = useMemo(() =>
         Object.entries(geneList)
@@ -1469,6 +1501,29 @@ const GeneSettings = ({ geneList, sampleId, onVisibilityGeneChange, cleanGeneSel
             .filter(([gene]) => gene.toLowerCase().includes(searchText.toLowerCase()))
         || []
         , [geneList, searchText]);
+
+    const handleCheckboxChange = (gene, isChecked) => {
+        let updatedSelection;
+        if (isChecked) {
+            updatedSelection = [...currentlySelectedGenes, gene];
+        } else {
+            updatedSelection = currentlySelectedGenes.filter(g => g !== gene);
+        }
+        setCurrentlySelectedGenes(updatedSelection);
+        if (onGeneSelectionChange) {
+            onGeneSelectionChange(updatedSelection);
+        }
+    };
+
+    const handleClearInternal = () => {
+        setCurrentlySelectedGenes([]);
+        if (onGeneSelectionChange) {
+            onGeneSelectionChange([]);
+        }
+        if (cleanGeneSelection) {
+            cleanGeneSelection();
+        }
+    };
 
     return (
         <div style={{ maxHeight: 400 }}>
@@ -1487,8 +1542,10 @@ const GeneSettings = ({ geneList, sampleId, onVisibilityGeneChange, cleanGeneSel
                         padding: '8px 0',
                         borderBottom: '1px solid #f0f0f0',
                     }}>
-                        <Checkbox style={{ marginRight: 8 }}
-                            onChange={e => onVisibilityGeneChange(gene)}
+                        <Checkbox
+                            style={{ marginRight: 8 }}
+                            checked={currentlySelectedGenes.includes(gene)}
+                            onChange={e => handleCheckboxChange(gene, e.target.checked)}
                         />
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                             <span style={{ fontSize: 12 }}>{gene}</span>
@@ -1498,7 +1555,7 @@ const GeneSettings = ({ geneList, sampleId, onVisibilityGeneChange, cleanGeneSel
                 ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 5 }}>
-                <Button size='small' style={{ width: '50%' }} onClick={cleanGeneSelection}>Clear</Button>
+                <Button size='small' style={{ width: '50%' }} onClick={handleClearInternal}>Clear</Button>
                 <Button size='small' style={{ width: '50%' }} onClick={() => confirmKosaraPlot(sampleId)}>Confirm</Button>
             </div>
         </div>

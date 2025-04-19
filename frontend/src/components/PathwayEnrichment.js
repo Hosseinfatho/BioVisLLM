@@ -3,74 +3,59 @@ import { Card, Spin, message, Popover } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import ComponentBanner from './ComponentBanner';
 
-const PathwayEnrichment = ({ selectedCells, selectedGenes }) => {
-    const [analysis, setAnalysis] = useState({
-        selected_cells: [],
-        selected_genes: [],
-        go_analysis: ''
+const PathwayEnrichment = ({ selectedCells = [], selectedGenes = [] }) => {
+    const [analysisState, setAnalysisState] = useState({
+        analysis_text: ''
     });
     const [loading, setLoading] = useState(false);
 
+    const top5Cells = (selectedCells || []).slice(0, 5);
+    const top5Genes = (selectedGenes || []).slice(0, 5);
+
     useEffect(() => {
-        console.log('PathwayEnrichment - Received selectedCells:', selectedCells);
-        console.log('PathwayEnrichment - Received selectedGenes:', selectedGenes);
+        console.log('PathwayEnrichment - Effect Triggered. Top 5 Cells:', top5Cells);
+        console.log('PathwayEnrichment - Effect Triggered. Top 5 Genes:', top5Genes);
 
-        const fetchAnalysis = async () => {
-            const topCells = selectedCells || [];
-            const topGenes = selectedGenes || [];
+        if (top5Cells.length > 0 && top5Genes.length > 0) {
+            setLoading(true);
+            setAnalysisState({ analysis_text: '' });
 
-            console.log('PathwayEnrichment - Sending Cells:', topCells);
-            console.log('PathwayEnrichment - Sending Genes:', topGenes);
+            const endpoint = '/analyze_pathway_enrichment';
+            console.log(`Fetching ${endpoint} with top ${top5Cells.length} cells and top ${top5Genes.length} genes.`);
 
-            if (topCells.length > 0 && topGenes.length > 0) {
-                setLoading(true);
-                try {
-                    const response = await fetch('http://localhost:5003/generate_go_analysis', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            selected_cells: topCells,
-                            selected_genes: topGenes
-                        })
-                    });
-
-                    const data = await response.json();
-                    if (data.error) {
-                        message.error(data.error);
-                        setAnalysis({
-                            selected_cells: topCells,
-                            selected_genes: topGenes,
-                            go_analysis: ''
-                        });
-                    } else {
-                        setAnalysis(data);
-                    }
-                } catch (error) {
-                    message.error('Failed to fetch Pathway/Functional Enrichment analysis');
-                    console.error('Error:', error);
-                    setAnalysis({
-                        selected_cells: topCells,
-                        selected_genes: topGenes,
-                        go_analysis: ''
-                    });
-                } finally {
-                    setLoading(false);
-                }
-            } else {
-                setAnalysis({
-                    selected_cells: selectedCells || [],
-                    selected_genes: selectedGenes || [],
-                    go_analysis: ''
-                });
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cells: top5Cells, genes: top5Genes })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) return response.json();
+                throw new Error("Received non-JSON response");
+            })
+            .then(data => {
+                console.log('PathwayEnrichment - Received data:', data);
+                setAnalysisState({ analysis_text: data.analysis || 'Analysis paragraph not found in response.' });
+            })
+            .catch(error => {
+                message.error(`Failed to fetch Pathway Enrichment analysis: ${error.message}`);
+                console.error('Error:', error);
+                setAnalysisState({ analysis_text: '' });
+            })
+            .finally(() => {
                 setLoading(false);
-            }
-        };
+            });
 
-        fetchAnalysis();
+        } else {
+            setAnalysisState({ analysis_text: '' });
+            setLoading(false);
+            console.log('PathwayEnrichment - Not enough cells or genes selected.');
+        }
     }, [selectedCells, selectedGenes]);
 
     const formatAnalysisText = (text) => {
-        if (!text) return null;
+        if (!text) return <p>No analysis available yet.</p>;
         return text.split('\n').map((line, index) => {
             if (line.match(/^\d+\.\s+.*?:$/) || line.match(/^[A-Za-z\s]+:/)) {
                 return <p key={index} style={{ marginTop: '0', paddingTop: '0', marginBottom: '0.5em' }}><strong>{line}</strong></p>;
@@ -86,7 +71,7 @@ const PathwayEnrichment = ({ selectedCells, selectedGenes }) => {
                 <Popover
                     content={
                         <div style={{ maxWidth: '300px' }}>
-                            <p>A method to identify biological pathways or functions that are overrepresented in a set of genes compared to a reference background.</p>
+                            <p>Identifies enriched biological pathways (e.g., KEGG, Reactome) and Gene Ontology (GO) terms to understand the functional roles of the top 5 selected genes in the context of the top 5 selected cells.</p>
                         </div>
                     }
                     title="What is Pathway and Functional Enrichment?"
@@ -110,16 +95,16 @@ const PathwayEnrichment = ({ selectedCells, selectedGenes }) => {
                 ) : (
                     <div style={{ textAlign: 'left', marginTop: '0', paddingTop: '0' }}>
                         <p style={{ textAlign: 'left', marginTop: '0', paddingTop: '0', marginBottom: '0.5em' }}>
-                            <strong>Selected Cells:</strong> {analysis.selected_cells.join(', ') || 'None'}
+                            <strong>Top 5 Selected Cells:</strong> {top5Cells.join(', ') || 'None'}
                         </p>
                         <p style={{ textAlign: 'left', marginTop: '0', paddingTop: '0', marginBottom: '1em' }}>
-                            <strong>Selected Genes:</strong> {analysis.selected_genes.join(', ') || 'None'}
+                            <strong>Top 5 Selected Genes:</strong> {top5Genes.join(', ') || 'None'}
                         </p>
 
-                        {analysis.selected_cells.length > 0 && analysis.selected_genes.length > 0 ? (
+                        {(top5Cells.length > 0 && top5Genes.length > 0) ? (
                             <>
                                 <h3 style={{ textAlign: 'left', fontWeight: 'bold', marginTop: '0', paddingTop: '0', marginBottom: '0.5em' }}>
-                                    Analysis:
+                                    BioBERT Analysis:
                                 </h3>
                                 <div style={{
                                     whiteSpace: 'pre-wrap',
@@ -128,7 +113,7 @@ const PathwayEnrichment = ({ selectedCells, selectedGenes }) => {
                                     marginTop: '0',
                                     paddingTop: '0'
                                 }}>
-                                    {analysis.go_analysis ? formatAnalysisText(analysis.go_analysis) : 'No analysis available yet.'}
+                                    {formatAnalysisText(analysisState.analysis_text)}
                                 </div>
                             </>
                         ) : (
