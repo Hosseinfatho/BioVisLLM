@@ -24,15 +24,17 @@ const DiseaseImmuneRelevance = ({ selectedCells = [], selectedGenes = [] }) => {
             // Clear previous analysis text
             setAnalysisState({ analysis_text: '' });
 
-            // --- Fetch analysis from backend ---
-            // TODO: Update endpoint if necessary for disease/immune relevance analysis
-            const endpoint = '/analyze_disease_relevance'; // Make sure this matches your new route in server.py
-            console.log(`Fetching ${endpoint} with top ${top5Cells.length} cells and top ${top5Genes.length} genes.`);
+            // Define the specific question for this component
+            const componentQuestion = `What is the potential disease or immune relevance of these genes (${top5Genes.join(', ')}) in relation to these cells (${top5Cells.join(', ')})?`;
+
+            const endpoint = '/analyze_disease_relevance';
+            console.log(`Fetching ${endpoint} for Disease Immune Relevance`);
 
             fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cells: top5Cells, genes: top5Genes })
+                // Send question along with cells and genes
+                body: JSON.stringify({ question: componentQuestion, cells: top5Cells, genes: top5Genes })
             })
             .then(response => {
                  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);

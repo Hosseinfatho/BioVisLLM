@@ -24,15 +24,17 @@ const SpatialComparison = ({ selectedCells = [], selectedGenes = [] }) => {
             // Clear previous analysis text
             setAnalysisState({ analysis_text: '' });
 
-            // --- Fetch analysis from backend ---
-            // TODO: Replace with your actual backend endpoint for spatial comparison
-            const endpoint = '/analyze_spatial_comparison'; // Make sure this matches your new route in server.py
-            console.log(`Fetching ${endpoint} with top ${top5Cells.length} cells and top ${top5Genes.length} genes.`);
+            // Define the specific question for this component
+            const componentQuestion = `Analyze the spatial comparison and statistical significance between regions for these cells (${top5Cells.join(', ')}) and these genes (${top5Genes.join(', ')})?`;
+
+            const endpoint = '/analyze_spatial_comparison';
+            console.log(`Fetching ${endpoint} for Spatial Comparison`);
 
             fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cells: top5Cells, genes: top5Genes }) // Send top 5
+                 // Send question along with cells and genes
+                body: JSON.stringify({ question: componentQuestion, cells: top5Cells, genes: top5Genes })
             })
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);

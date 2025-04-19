@@ -21,7 +21,7 @@ from process import (
     # get_gene_list,
     # get_specific_gene_expression
 )
-from biobert_service import biobert_service, COMPONENT_CONTEXTS
+from biobert_service import biobert_service
 import matplotlib.pyplot as plt
 import seaborn as sns
 import scanpy as sc
@@ -215,200 +215,128 @@ def explain_component():
         "explanation": explanation
     })
 
-@app.route('/generate_go_analysis', methods=['POST'])
-def generate_go_analysis():
-    try:
-        data = request.json
-        selected_cells = data.get('selected_cells', [])[:3]  # Get top 3 cells
-        selected_genes = data.get('selected_genes', [])[:3]  # Get top 3 genes
-        
-        if not selected_cells or not selected_genes:
-            return jsonify({"error": "Please select at least one cell and one gene"}), 400
-        # Create a context for BioBERT
-        context = f"""
-        The following analysis focuses on Gene Ontology (GO) Terms and Pathways related to:
-        - Selected cell types: {', '.join(selected_cells)}
-        - Selected genes: {', '.join(selected_genes)}
-                Gene Ontology terms describe gene functions in three categories:
-        1. Molecular Function: The biochemical activity of gene products
-        2. Biological Process: The larger biological objective accomplished by multiple molecular functions
-        3. Cellular Component: Where in the cell the gene product is active
-                Pathways represent collections of genes that work together in specific biological processes.
-        """# Create a question for BioBERT
-        question = f"""
-        What are the most significant Gene Ontology terms and pathways associated with these cell types and genes?
-        How do these GO terms and pathways relate to the biological functions and processes in these cells?
-        """
-        
-        # Get explanation from BioBERT
-        explanation = biobert_service.explain_component("GeneOntology", context)
-        
-        return jsonify({
-            "selected_cells": selected_cells,
-            "selected_genes": selected_genes,
-            "go_analysis": explanation
-        })
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-def get_regional_relationship_analysis(cells, genes, model, tokenizer):
-    # ---- Placeholder for your actual BioBERT logic ----
-    # 1. Construct a prompt/query using the cells and genes.
-    #    Example prompt: "Analyze the relationship between genes [gene1, gene2,...] and cell types [cell1, cell2,...] in the selected region."
-    prompt = f"Analyze the relationship between genes {genes} and cell types {cells} in the selected region."
-
-    # 2. Use the tokenizer and model to generate text based on the prompt.
-    #    This is a simplified example; actual usage depends on the specific BioBERT task (e.g., question answering, text generation)
-    # inputs = tokenizer(prompt, return_tensors="pt")
-    # outputs = model.generate(**inputs) # Or model(**inputs) depending on model type
-    # generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-    # --- Replace with your actual BioBERT generation ---
-    generated_text = f"Based on BioBERT analysis, the genes {', '.join(genes)} show significant association with cell types {', '.join(cells)} within the context of the selected region. [More detailed BioBERT output specific to regional relationships]."
-    # --- End Placeholder ---
-
-    return generated_text
-
 @app.route('/analyze_regional_relationship', methods=['POST'])
 def handle_regional_relationship():
     try:
-        data = request.get_json()
-        if not data or 'cells' not in data or 'genes' not in data:
-            return jsonify({"error": "Missing 'cells' or 'genes' in request"}), 400
+        data = request.json
+        question = data.get('question')
+        cells = data.get('cells', [])
+        genes = data.get('genes', [])
 
-        cells = data['cells']
-        genes = data['genes']
+        if not cells or not genes or not question:
+            return jsonify({"error": "Missing question, cells, or genes"}), 400
 
-        # Ensure cells and genes are lists (basic validation)
-        if not isinstance(cells, list) or not isinstance(genes, list):
-             return jsonify({"error": "'cells' and 'genes' must be lists"}), 400
+        # Create a slightly more descriptive context
+        context = f"Context for Regional Gene-Cell Relationship analysis. Involved cell types: {', '.join(cells)}. Involved genes: {', '.join(genes)}."
 
-        print(f"Backend received for /analyze_regional_relationship: cells={cells}, genes={genes}")
+        explanation = biobert_service.explain_component(
+            component_name="RegionalRelationship",
+            context=context, # Pass the more descriptive context
+            question=question
+        )
 
-        # Call your BioBERT analysis function
-        # You might need to pass your loaded model/tokenizer here
-        analysis_paragraph = get_regional_relationship_analysis(cells, genes, None, None) # Replace None with actual model/tokenizer if needed
-
-        # Return the result as JSON
-        return jsonify({"analysis": analysis_paragraph})
-
+        return jsonify({"analysis": explanation})
     except Exception as e:
-        print(f"Error in /analyze_regional_relationship: {e}")
-        # Return a generic server error
-        return jsonify({"error": "An internal server error occurred"}), 500
-
-# Placeholder analysis functions (replace with actual BioBERT logic)
-# -----------------------------------------------------------------
-
-def get_spatial_comparison_analysis(cells, genes, model, tokenizer):
-    prompt = f"Analyze the spatial comparison between regions focusing on genes {genes} and cell types {cells}, including statistical significance (p-values, FDR)."
-    # --- Replace with your actual BioBERT generation ---
-    generated_text = f"BioBERT spatial comparison analysis for genes {', '.join(genes)} and cells {', '.join(cells)}: [Details on expression differences, p-values, FDR]."
-    # --- End Placeholder ---
-    return generated_text
-
-def get_pathway_enrichment_analysis(cells, genes, model, tokenizer):
-    prompt = f"Perform pathway and functional enrichment analysis (GO, KEGG, Reactome) for genes {genes} in the context of cell types {cells}."
-    # --- Replace with your actual BioBERT generation ---
-    generated_text = f"BioBERT pathway enrichment analysis for genes {', '.join(genes)} and cells {', '.join(cells)}: [Details on enriched GO terms, pathways, and their significance]."
-    # --- End Placeholder ---
-    return generated_text
-
-def get_coexpression_analysis(cells, genes, model, tokenizer):
-    prompt = f"Analyze gene co-expression patterns and potential interactions for genes {genes} across cell types {cells}."
-    # --- Replace with your actual BioBERT generation ---
-    generated_text = f"BioBERT co-expression and interaction analysis for genes {', '.join(genes)} and cells {', '.join(cells)}: [Details on co-expression clusters and potential interactions]."
-    # --- End Placeholder ---
-    return generated_text
-
-def get_disease_relevance_analysis(cells, genes, model, tokenizer):
-    prompt = f"Analyze the disease or immune relevance of genes {genes} and their spatial patterns in cell types {cells}."
-    # --- Replace with your actual BioBERT generation ---
-    generated_text = f"BioBERT disease/immune relevance analysis for genes {', '.join(genes)} and cells {', '.join(cells)}: [Details on links to diseases, immune infiltration, etc.]."
-    # --- End Placeholder ---
-    return generated_text
-
-# New Flask Routes for Analysis Components
-# -----------------------------------------
+        app.logger.error(f"Error in regional relationship analysis: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/analyze_spatial_comparison', methods=['POST'])
 def handle_spatial_comparison():
     try:
-        data = request.get_json()
-        if not data or 'cells' not in data or 'genes' not in data:
-            return jsonify({"error": "Missing 'cells' or 'genes' in request"}), 400
-        cells = data['cells']
-        genes = data['genes']
-        if not isinstance(cells, list) or not isinstance(genes, list):
-             return jsonify({"error": "'cells' and 'genes' must be lists"}), 400
-        print(f"Backend received for /analyze_spatial_comparison: cells={cells}, genes={genes}")
-        # Replace None with actual model/tokenizer if needed
-        analysis_paragraph = get_spatial_comparison_analysis(cells, genes, None, None)
-        return jsonify({"analysis": analysis_paragraph})
+        data = request.json
+        question = data.get('question')
+        cells = data.get('cells', [])
+        genes = data.get('genes', [])
+
+        if not cells or not genes or not question:
+            return jsonify({"error": "Missing question, cells, or genes"}), 400
+
+        # Create a slightly more descriptive context
+        context = f"Context for Spatial Comparison analysis. Involved cell types: {', '.join(cells)}. Involved genes: {', '.join(genes)}."
+
+        explanation = biobert_service.explain_component(
+            component_name="SpatialComparison",
+            context=context, # Pass the more descriptive context
+            question=question
+        )
+
+        return jsonify({"analysis": explanation})
     except Exception as e:
-        print(f"Error in /analyze_spatial_comparison: {e}")
-        return jsonify({"error": "An internal server error occurred"}), 500
+        app.logger.error(f"Error in spatial comparison analysis: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/analyze_pathway_enrichment', methods=['POST'])
 def handle_pathway_enrichment():
-    # Note: Frontend might still be using /generate_go_analysis.
-    # If so, either update frontend or reuse the logic from generate_go_analysis here.
-    # This route provides a dedicated endpoint.
     try:
-        data = request.get_json()
-        if not data or 'cells' not in data or 'genes' not in data:
-            return jsonify({"error": "Missing 'cells' or 'genes' in request"}), 400
-        cells = data['cells']
-        genes = data['genes']
-        if not isinstance(cells, list) or not isinstance(genes, list):
-             return jsonify({"error": "'cells' and 'genes' must be lists"}), 400
-        print(f"Backend received for /analyze_pathway_enrichment: cells={cells}, genes={genes}")
-        # Replace None with actual model/tokenizer if needed
-        analysis_paragraph = get_pathway_enrichment_analysis(cells, genes, None, None)
-        return jsonify({"analysis": analysis_paragraph})
+        data = request.json
+        question = data.get('question')
+        cells = data.get('cells', [])
+        genes = data.get('genes', [])
+
+        if not cells or not genes or not question:
+            return jsonify({"error": "Missing question, cells, or genes"}), 400
+
+        # Create a slightly more descriptive context
+        context = f"Context for Pathway and Functional Enrichment analysis. Involved cell types: {', '.join(cells)}. Involved genes: {', '.join(genes)}."
+
+        explanation = biobert_service.explain_component(
+            component_name="PathwayEnrichment",
+            context=context, # Pass the more descriptive context
+            question=question
+        )
+
+        return jsonify({"analysis": explanation})
     except Exception as e:
-        print(f"Error in /analyze_pathway_enrichment: {e}")
-        return jsonify({"error": "An internal server error occurred"}), 500
+        app.logger.error(f"Error in pathway enrichment analysis: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/analyze_coexpression', methods=['POST'])
 def handle_coexpression():
     try:
-        data = request.get_json()
-        if not data or 'cells' not in data or 'genes' not in data:
-            return jsonify({"error": "Missing 'cells' or 'genes' in request"}), 400
-        cells = data['cells']
-        genes = data['genes']
-        if not isinstance(cells, list) or not isinstance(genes, list):
-             return jsonify({"error": "'cells' and 'genes' must be lists"}), 400
-        print(f"Backend received for /analyze_coexpression: cells={cells}, genes={genes}")
-        # Replace None with actual model/tokenizer if needed
-        analysis_paragraph = get_coexpression_analysis(cells, genes, None, None)
-        return jsonify({"analysis": analysis_paragraph})
+        data = request.json
+        question = data.get('question')
+        cells = data.get('cells', [])
+        genes = data.get('genes', [])
+
+        if not cells or not genes or not question:
+            return jsonify({"error": "Missing question, cells, or genes"}), 400
+
+        # Create a slightly more descriptive context
+        context = f"Context for Gene Co-expression and Interaction analysis. Involved cell types: {', '.join(cells)}. Involved genes: {', '.join(genes)}."
+
+        explanation = biobert_service.explain_component(
+            component_name="CoExpression",
+            context=context, # Pass the more descriptive context
+            question=question
+        )
+        return jsonify({"analysis": explanation})
     except Exception as e:
-        print(f"Error in /analyze_coexpression: {e}")
-        return jsonify({"error": "An internal server error occurred"}), 500
+        app.logger.error(f"Error in coexpression analysis: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/analyze_disease_relevance', methods=['POST'])
 def handle_disease_relevance():
-    # Note: Frontend might still be using /analyze_logfc.
-    # If so, either update frontend or reuse the logic from that endpoint here.
-    # This route provides a dedicated endpoint.
     try:
-        data = request.get_json()
-        if not data or 'cells' not in data or 'genes' not in data:
-            return jsonify({"error": "Missing 'cells' or 'genes' in request"}), 400
-        cells = data['cells']
-        genes = data['genes']
-        if not isinstance(cells, list) or not isinstance(genes, list):
-             return jsonify({"error": "'cells' and 'genes' must be lists"}), 400
-        print(f"Backend received for /analyze_disease_relevance: cells={cells}, genes={genes}")
-        # Replace None with actual model/tokenizer if needed
-        analysis_paragraph = get_disease_relevance_analysis(cells, genes, None, None)
-        return jsonify({"analysis": analysis_paragraph})
+        data = request.json
+        question = data.get('question')
+        cells = data.get('cells', [])
+        genes = data.get('genes', [])
+
+        if not cells or not genes or not question:
+            return jsonify({"error": "Missing question, cells, or genes"}), 400
+
+        # Create a slightly more descriptive context
+        context = f"Context for Disease or Immune Relevance analysis. Involved cell types: {', '.join(cells)}. Involved genes: {', '.join(genes)}."
+
+        explanation = biobert_service.explain_component(
+            component_name="DiseaseRelevance",
+            context=context, # Pass the more descriptive context
+            question=question
+        )
+        return jsonify({"analysis": explanation})
     except Exception as e:
-        print(f"Error in /analyze_disease_relevance: {e}")
-        return jsonify({"error": "An internal server error occurred"}), 500
+        app.logger.error(f"Error in disease relevance analysis: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # --- End of new routes and functions ---
 

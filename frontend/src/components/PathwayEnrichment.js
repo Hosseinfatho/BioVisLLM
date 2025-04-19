@@ -20,13 +20,17 @@ const PathwayEnrichment = ({ selectedCells = [], selectedGenes = [] }) => {
             setLoading(true);
             setAnalysisState({ analysis_text: '' });
 
+            // Define the specific question for this component
+            const componentQuestion = `Regarding pathway and functional enrichment, what roles do these genes (${top5Genes.join(', ')}) play in the context of these cells (${top5Cells.join(', ')})?`;
+
             const endpoint = '/analyze_pathway_enrichment';
-            console.log(`Fetching ${endpoint} with top ${top5Cells.length} cells and top ${top5Genes.length} genes.`);
+            console.log(`Fetching ${endpoint} for Pathway Enrichment`);
 
             fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cells: top5Cells, genes: top5Genes })
+                // Send question along with cells and genes
+                body: JSON.stringify({ question: componentQuestion, cells: top5Cells, genes: top5Genes })
             })
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);

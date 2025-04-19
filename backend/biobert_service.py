@@ -25,10 +25,20 @@ class BioBERTService:
         # Get the answer
         answer_start = torch.argmax(outputs.start_logits)
         answer_end = torch.argmax(outputs.end_logits) + 1
+        answer_tokens = inputs["input_ids"][0][answer_start:answer_end]
+
+        # Handle cases where the model returns an empty or non-sensical span
+        if answer_start >= answer_end or len(answer_tokens) == 0:
+            return "[BioBERT QA could not find an answer in the provided context]"
+
         answer = self.tokenizer.convert_tokens_to_string(
-            self.tokenizer.convert_ids_to_tokens(inputs["input_ids"][0][answer_start:answer_end])
+            self.tokenizer.convert_ids_to_tokens(answer_tokens)
         )
-        
+
+        # Further check if the answer is just padding or special tokens
+        if not answer or answer.strip() in [self.tokenizer.cls_token, self.tokenizer.sep_token, self.tokenizer.pad_token]:
+             return "[BioBERT QA could not find an answer in the provided context]"
+
         return answer
 
 # Component contexts

@@ -23,18 +23,19 @@ const RegionalGeneCellRelationship = ({ selectedCells = [], selectedGenes = [] }
 
         if (cellsToAnalyze.length > 0 && genesToAnalyze.length > 0) {
             setLoading(true);
-            // Store the exact lists being sent for display
             setAnalysis(prev => ({ ...prev, selected_cells: cellsToAnalyze, selected_genes: genesToAnalyze, analysis_text: '' }));
 
-            // --- Fetch analysis from backend ---
-            // TODO: Replace with your actual backend endpoint
+            // Define the specific question for this component
+            const componentQuestion = `What is the regional gene-cell relationship involving these cells (${cellsToAnalyze.join(', ')}) and these genes (${genesToAnalyze.join(', ')})?`;
+
             const endpoint = '/analyze_regional_relationship';
-            console.log(`Fetching ${endpoint} with top ${cellsToAnalyze.length} cells and top ${genesToAnalyze.length} genes.`);
+            console.log(`Fetching ${endpoint} for Regional Relationship`);
 
             fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cells: cellsToAnalyze, genes: genesToAnalyze })
+                // Send question along with cells and genes
+                body: JSON.stringify({ question: componentQuestion, cells: cellsToAnalyze, genes: genesToAnalyze })
             })
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
