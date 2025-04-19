@@ -4,7 +4,7 @@ import { Card, Spin, message } from 'antd';
 import ComponentBanner from './ComponentBanner';
 import ComponentExplanation from './ComponentExplanation';
 
-const RegionalGeneCellRelationship = ({ selectedCells = [], selectedGenes = [] }) => {
+const RegionalGeneCellRelationship = ({ selectedCells = [], selectedGenes = [], selectedModel }) => {
     const [analysis, setAnalysis] = useState({
         selected_cells: [], // Store the cells sent for analysis
         selected_genes: [], // Store the genes sent for analysis
@@ -35,7 +35,7 @@ const RegionalGeneCellRelationship = ({ selectedCells = [], selectedGenes = [] }
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 // Send question along with cells and genes
-                body: JSON.stringify({ question: componentQuestion, cells: cellsToAnalyze, genes: genesToAnalyze })
+                body: JSON.stringify({ question: componentQuestion, cells: cellsToAnalyze, genes: genesToAnalyze, selectedModel: selectedModel })
             })
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -68,7 +68,7 @@ const RegionalGeneCellRelationship = ({ selectedCells = [], selectedGenes = [] }
             setLoading(false);
             console.log('RegionalGeneCellRelationship - Not enough cells or genes selected.');
         }
-    }, [selectedCells, selectedGenes]);
+    }, [selectedCells, selectedGenes, selectedModel]);
 
     // Simple paragraph display
     const formatAnalysisText = (text) => {

@@ -4,7 +4,7 @@ import { Card, Spin, message } from 'antd';
 import ComponentBanner from './ComponentBanner';
 import ComponentExplanation from './ComponentExplanation';
 
-const GeneCoexpressionInteraction = ({ selectedCells = [], selectedGenes = [] }) => {
+const GeneCoexpressionInteraction = ({ selectedCells = [], selectedGenes = [], selectedModel }) => {
     const [analysisState, setAnalysisState] = useState({
         // State to store the analysis result
         analysis_text: ''
@@ -33,8 +33,7 @@ const GeneCoexpressionInteraction = ({ selectedCells = [], selectedGenes = [] })
             fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                 // Send question along with cells and genes
-                body: JSON.stringify({ question: componentQuestion, cells: top5Cells, genes: top5Genes })
+                body: JSON.stringify({ question: componentQuestion, cells: top5Cells, genes: top5Genes, selectedModel: selectedModel })
             })
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -44,8 +43,7 @@ const GeneCoexpressionInteraction = ({ selectedCells = [], selectedGenes = [] })
             })
             .then(data => {
                 console.log('GeneCoexpressionInteraction - Received data:', data);
-                // Assuming backend returns { analysis: "Paragraph..." } or { coexpression_analysis: "..." }
-                setAnalysisState({ analysis_text: data.analysis || data.coexpression_analysis || 'Analysis paragraph not found in response.' });
+                setAnalysisState({ analysis_text: data.analysis || 'Analysis paragraph not found in response.' });
             })
             .catch(error => {
                 message.error(`Failed to fetch Gene Co-expression analysis: ${error.message}`);
@@ -64,7 +62,7 @@ const GeneCoexpressionInteraction = ({ selectedCells = [], selectedGenes = [] })
              console.log('GeneCoexpressionInteraction - Not enough cells or genes selected.');
         }
     // Depend on the original props
-    }, [selectedCells, selectedGenes]);
+    }, [selectedCells, selectedGenes, selectedModel]);
 
     const formatAnalysisText = (text) => {
         if (!text) return <p>No analysis available yet.</p>;

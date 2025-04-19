@@ -165,18 +165,21 @@ function App() {
                         <RegionalGeneCellRelationship 
                           selectedCells={selectedCells}
                           selectedGenes={selectedGenes}
+                          selectedModel={selectedModel}
                         />
                       </Splitter.Panel>
                       <Splitter.Panel defaultSize="33.33%" min="20%" max="45%">
                         <SpatialComparison 
                           selectedCells={selectedCells}
                           selectedGenes={selectedGenes}
+                          selectedModel={selectedModel}
                         />
                       </Splitter.Panel>
                       <Splitter.Panel defaultSize="33.33%" min="20%" max="45%">
                         <PathwayEnrichment 
                           selectedCells={selectedCells}
                           selectedGenes={selectedGenes}
+                          selectedModel={selectedModel}
                         />
                       </Splitter.Panel>
                     </Splitter>
@@ -189,12 +192,14 @@ function App() {
                     <DiseaseImmuneRelevance 
                       selectedCells={selectedCells}
                       selectedGenes={selectedGenes}
+                      selectedModel={selectedModel}
                     />
                   </Splitter.Panel>
                   <Splitter.Panel defaultSize="50%" min="30%" max="70%">
                     <GeneCoexpressionInteraction 
                       selectedCells={selectedCells}
                       selectedGenes={selectedGenes}
+                      selectedModel={selectedModel}
                     />
                   </Splitter.Panel>
                 </Splitter>

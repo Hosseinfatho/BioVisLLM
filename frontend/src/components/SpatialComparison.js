@@ -4,7 +4,7 @@ import { Card, Spin, message } from 'antd';
 import ComponentBanner from './ComponentBanner';
 import ComponentExplanation from './ComponentExplanation';
 
-const SpatialComparison = ({ selectedCells = [], selectedGenes = [] }) => {
+const SpatialComparison = ({ selectedCells = [], selectedGenes = [], selectedModel }) => {
     const [analysisState, setAnalysisState] = useState({
         // State to store the analysis result
         analysis_text: ''
@@ -33,8 +33,7 @@ const SpatialComparison = ({ selectedCells = [], selectedGenes = [] }) => {
             fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                 // Send question along with cells and genes
-                body: JSON.stringify({ question: componentQuestion, cells: top5Cells, genes: top5Genes })
+                body: JSON.stringify({ question: componentQuestion, cells: top5Cells, genes: top5Genes, selectedModel: selectedModel })
             })
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -65,7 +64,7 @@ const SpatialComparison = ({ selectedCells = [], selectedGenes = [] }) => {
              console.log('SpatialComparison - Not enough cells or genes selected.');
         }
     // Depend on the original props
-    }, [selectedCells, selectedGenes]);
+    }, [selectedCells, selectedGenes, selectedModel]);
 
      // Format analysis text, bolding specific lines
      const formatAnalysisText = (text) => {

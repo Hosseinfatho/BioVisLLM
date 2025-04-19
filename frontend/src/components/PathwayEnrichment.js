@@ -3,7 +3,7 @@ import { Card, Spin, message, Popover } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import ComponentBanner from './ComponentBanner';
 
-const PathwayEnrichment = ({ selectedCells = [], selectedGenes = [] }) => {
+const PathwayEnrichment = ({ selectedCells = [], selectedGenes = [], selectedModel }) => {
     const [analysisState, setAnalysisState] = useState({
         analysis_text: ''
     });
@@ -29,8 +29,8 @@ const PathwayEnrichment = ({ selectedCells = [], selectedGenes = [] }) => {
             fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // Send question along with cells and genes
-                body: JSON.stringify({ question: componentQuestion, cells: top5Cells, genes: top5Genes })
+                // Send question along with cells, genes, and selectedModel
+                body: JSON.stringify({ question: componentQuestion, cells: top5Cells, genes: top5Genes, selectedModel: selectedModel })
             })
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -56,7 +56,7 @@ const PathwayEnrichment = ({ selectedCells = [], selectedGenes = [] }) => {
             setLoading(false);
             console.log('PathwayEnrichment - Not enough cells or genes selected.');
         }
-    }, [selectedCells, selectedGenes]);
+    }, [selectedCells, selectedGenes, selectedModel]);
 
     const formatAnalysisText = (text) => {
         if (!text) return <p>No analysis available yet.</p>;

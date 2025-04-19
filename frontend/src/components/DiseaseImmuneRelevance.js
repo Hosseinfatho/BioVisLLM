@@ -4,7 +4,7 @@ import { Card, Spin, message } from 'antd';
 import ComponentBanner from './ComponentBanner';
 import ComponentExplanation from './ComponentExplanation';
 
-const DiseaseImmuneRelevance = ({ selectedCells = [], selectedGenes = [] }) => {
+const DiseaseImmuneRelevance = ({ selectedCells = [], selectedGenes = [], selectedModel }) => {
     const [analysisState, setAnalysisState] = useState({
         // State to store the analysis result
         analysis_text: ''
@@ -34,7 +34,7 @@ const DiseaseImmuneRelevance = ({ selectedCells = [], selectedGenes = [] }) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 // Send question along with cells and genes
-                body: JSON.stringify({ question: componentQuestion, cells: top5Cells, genes: top5Genes })
+                body: JSON.stringify({ question: componentQuestion, cells: top5Cells, genes: top5Genes, selectedModel: selectedModel })
             })
             .then(response => {
                  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -64,7 +64,7 @@ const DiseaseImmuneRelevance = ({ selectedCells = [], selectedGenes = [] }) => {
             console.log('DiseaseImmuneRelevance - Not enough cells or genes selected.');
         }
     // Depend on the original props
-    }, [selectedCells, selectedGenes]);
+    }, [selectedCells, selectedGenes, selectedModel]);
 
      const formatAnalysisText = (text) => {
         if (!text) return <p>No analysis available yet.</p>;

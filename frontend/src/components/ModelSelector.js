@@ -4,7 +4,8 @@ import { Select } from 'antd';
 const ModelSelector = ({ onModelChange }) => {
   const models = [
     { value: 'biobert', label: 'BioBERT' },
-    { value: 'gpt', label: 'GPT (Coming Soon)', disabled: true }
+    { value: 'gemini', label: 'Gemini' },
+    // { value: 'gpt', label: 'GPT (Coming Soon)', disabled: true }
   ];
 
   return (

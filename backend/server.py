@@ -22,6 +22,7 @@ from process import (
     # get_specific_gene_expression
 )
 from biobert_service import biobert_service
+from gemini_service import gemini_service
 import matplotlib.pyplot as plt
 import seaborn as sns
 import scanpy as sc
@@ -222,18 +223,21 @@ def handle_regional_relationship():
         question = data.get('question')
         cells = data.get('cells', [])
         genes = data.get('genes', [])
+        selected_model = data.get('selectedModel', 'biobert')
 
         if not cells or not genes or not question:
             return jsonify({"error": "Missing question, cells, or genes"}), 400
 
-        # Create a slightly more descriptive context
-        context = f"Context for Regional Gene-Cell Relationship analysis. Involved cell types: {', '.join(cells)}. Involved genes: {', '.join(genes)}."
-
-        explanation = biobert_service.explain_component(
-            component_name="RegionalRelationship",
-            context=context, # Pass the more descriptive context
-            question=question
-        )
+        explanation = ""
+        if selected_model == 'gemini':
+            explanation = gemini_service.generate_analysis(question=question)
+        else:
+            context = f"Context for Regional Gene-Cell Relationship analysis. Involved cell types: {', '.join(cells)}. Involved genes: {', '.join(genes)}."
+            explanation = biobert_service.explain_component(
+                component_name="RegionalRelationship",
+                context=context,
+                question=question
+            )
 
         return jsonify({"analysis": explanation})
     except Exception as e:
@@ -247,18 +251,21 @@ def handle_spatial_comparison():
         question = data.get('question')
         cells = data.get('cells', [])
         genes = data.get('genes', [])
+        selected_model = data.get('selectedModel', 'biobert')
 
         if not cells or not genes or not question:
             return jsonify({"error": "Missing question, cells, or genes"}), 400
 
-        # Create a slightly more descriptive context
-        context = f"Context for Spatial Comparison analysis. Involved cell types: {', '.join(cells)}. Involved genes: {', '.join(genes)}."
-
-        explanation = biobert_service.explain_component(
-            component_name="SpatialComparison",
-            context=context, # Pass the more descriptive context
-            question=question
-        )
+        explanation = ""
+        if selected_model == 'gemini':
+            explanation = gemini_service.generate_analysis(question=question)
+        else:
+            context = f"Context for Spatial Comparison analysis. Involved cell types: {', '.join(cells)}. Involved genes: {', '.join(genes)}."
+            explanation = biobert_service.explain_component(
+                component_name="SpatialComparison",
+                context=context,
+                question=question
+            )
 
         return jsonify({"analysis": explanation})
     except Exception as e:
@@ -272,18 +279,21 @@ def handle_pathway_enrichment():
         question = data.get('question')
         cells = data.get('cells', [])
         genes = data.get('genes', [])
+        selected_model = data.get('selectedModel', 'biobert')
 
         if not cells or not genes or not question:
             return jsonify({"error": "Missing question, cells, or genes"}), 400
 
-        # Create a slightly more descriptive context
-        context = f"Context for Pathway and Functional Enrichment analysis. Involved cell types: {', '.join(cells)}. Involved genes: {', '.join(genes)}."
-
-        explanation = biobert_service.explain_component(
-            component_name="PathwayEnrichment",
-            context=context, # Pass the more descriptive context
-            question=question
-        )
+        explanation = ""
+        if selected_model == 'gemini':
+            explanation = gemini_service.generate_analysis(question=question)
+        else:
+            context = f"Context for Pathway and Functional Enrichment analysis. Involved cell types: {', '.join(cells)}. Involved genes: {', '.join(genes)}."
+            explanation = biobert_service.explain_component(
+                component_name="PathwayEnrichment",
+                context=context,
+                question=question
+            )
 
         return jsonify({"analysis": explanation})
     except Exception as e:
@@ -297,18 +307,21 @@ def handle_coexpression():
         question = data.get('question')
         cells = data.get('cells', [])
         genes = data.get('genes', [])
+        selected_model = data.get('selectedModel', 'biobert')
 
         if not cells or not genes or not question:
             return jsonify({"error": "Missing question, cells, or genes"}), 400
 
-        # Create a slightly more descriptive context
-        context = f"Context for Gene Co-expression and Interaction analysis. Involved cell types: {', '.join(cells)}. Involved genes: {', '.join(genes)}."
-
-        explanation = biobert_service.explain_component(
-            component_name="CoExpression",
-            context=context, # Pass the more descriptive context
-            question=question
-        )
+        explanation = ""
+        if selected_model == 'gemini':
+            explanation = gemini_service.generate_analysis(question=question)
+        else:
+            context = f"Context for Gene Co-expression and Interaction analysis. Involved cell types: {', '.join(cells)}. Involved genes: {', '.join(genes)}."
+            explanation = biobert_service.explain_component(
+                component_name="CoExpression",
+                context=context,
+                question=question
+            )
         return jsonify({"analysis": explanation})
     except Exception as e:
         app.logger.error(f"Error in coexpression analysis: {e}")
@@ -321,18 +334,21 @@ def handle_disease_relevance():
         question = data.get('question')
         cells = data.get('cells', [])
         genes = data.get('genes', [])
+        selected_model = data.get('selectedModel', 'biobert')
 
         if not cells or not genes or not question:
             return jsonify({"error": "Missing question, cells, or genes"}), 400
 
-        # Create a slightly more descriptive context
-        context = f"Context for Disease or Immune Relevance analysis. Involved cell types: {', '.join(cells)}. Involved genes: {', '.join(genes)}."
-
-        explanation = biobert_service.explain_component(
-            component_name="DiseaseRelevance",
-            context=context, # Pass the more descriptive context
-            question=question
-        )
+        explanation = ""
+        if selected_model == 'gemini':
+            explanation = gemini_service.generate_analysis(question=question)
+        else:
+            context = f"Context for Disease or Immune Relevance analysis. Involved cell types: {', '.join(cells)}. Involved genes: {', '.join(genes)}."
+            explanation = biobert_service.explain_component(
+                component_name="DiseaseRelevance",
+                context=context,
+                question=question
+            )
         return jsonify({"analysis": explanation})
     except Exception as e:
         app.logger.error(f"Error in disease relevance analysis: {e}")
