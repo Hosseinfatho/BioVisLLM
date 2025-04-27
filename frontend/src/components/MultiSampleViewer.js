@@ -8,23 +8,8 @@ import { booleanPointInPolygon, centroid, sample } from '@turf/turf';
 import { TileLayer } from '@deck.gl/geo-layers';
 import { EditableGeoJsonLayer, DrawPolygonMode } from '@deck.gl-community/editable-layers';
 import { fromBlob } from 'geotiff';
+import { convertHSLtoRGB, convertHEXToRGB, hashStringToHue, GENE_COLOR_PALETTE } from './ColorUtils';
 import "../styles/MultiSampleViewer.css";
-
-const CELL_COLORS = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1',
-    '#96CEB4', '#FFEEAD', '#D4A5A5',
-    '#88D8B0', '#FF9999', '#99CCFF'
-];
-
-const stringToHash = (str) => {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = (hash << 5) - hash + char;
-        hash |= 0;
-    }
-    return Math.abs(hash);
-};
 
 const radioOptions = [
     {
@@ -37,42 +22,10 @@ const radioOptions = [
     },
 ];
 
-// HSL to RGB
-const hslToRgb = (h, s, l) => {
-    h /= 360;
-    s /= 100;
-    l /= 100;
-    let r, g, b;
-    if (s === 0) {
-        r = g = b = l;
-    } else {
-        const hue2rgb = (p, q, t) => {
-            if (t < 0) t += 1;
-            if (t > 1) t -= 1;
-            if (t < 1 / 6) return p + (q - p) * 6 * t;
-            if (t < 1 / 2) return q;
-            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-            return p;
-        };
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        const p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1 / 3);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1 / 3);
-    }
-    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
-};
-
-const hexToRgbs = (hex) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return [r, g, b];
-};
-
 // generate random color, call this function after saving region to update the color for next drawing
 const generateRandomColor = () => {
-    return hslToRgb(Math.floor(Math.random() * 360), 100, 50);
+    const randomHue = Math.floor(Math.random() * 360);
+    return convertHSLtoRGB(randomHue, 100, 50);
 };
 
 const debounce = (fn, delay) => {
@@ -97,38 +50,32 @@ export const MultiSampleViewer = ({
     analyzedRegion,
     setAnalyzedRegion,
     NMFclusterCells,
-    setSelectedRegionGeneExpressionData,
-    onCellSelect,
-    onGeneSelect
+    setSelectedRegionGeneExpressionData
 }) => {
-    const [imageSizes, setImageSizes] = useState({});
+    const [imageSizes, setImageSizes] = useState({}); // The image sizes for each sample, e.g. {skin_TXK6Z4X_A1: [13030, 13511], ...}
     const [tileSize] = useState(256);
     const [features, setFeatures] = useState(
         samples.reduce((acc, sample) => ({
             ...acc,
             [sample.id]: { type: 'FeatureCollection', features: [] }
         }), {})
-    );
-    const [tempRegions, setTempRegions] = useState({});
-    const [visibleCellTypes, setVisibleCellTypes] = useState({});
-    const [colorMaps, setColorMaps] = useState({});
-    const [hoveredCell, setHoveredCell] = useState(null);
-    const [sampleOffsets, setSampleOffsets] = useState({});
-    const [activeSample, setActiveSample] = useState(samples[0]?.id);
-    const [visibleSamples, setVisibleSamples] = useState(
-        samples.reduce((acc, sample) => ({ ...acc, [sample.id]: true }), {})
-    );
-    const [geneList, setGeneList] = useState({});
-    const [selectedGenes, setSelectedGenes] = useState([]);
-    const [regionName, setRegionName] = useState('');
-    const [regionColor, setRegionColor] = useState(generateRandomColor());
-    const [isDrawingActive, setIsDrawingActive] = useState(false);
-    const [activeDrawingSample, setActiveDrawingSample] = useState(null);
-    const [currentZoom, setCurrentZoom] = useState(-3);
+    ); // For drawing new region polygons
+    const [tempRegions, setTempRegions] = useState({}); // Temporary region data while drawing. Used to store cells within the currently drawn polygon before saving.
+    const [visibleCellTypes, setVisibleCellTypes] = useState({}); // The visibility of each cell type for each sample
+    const [colorMaps, setColorMaps] = useState({}); // The color map for each cell type for each sample
+    const [hoveredCell, setHoveredCell] = useState(null); // Information about the mouse hovering on the cell
+    const [sampleOffsets, setSampleOffsets] = useState({}); // The offset between the samples
+    const [geneList, setGeneList] = useState({}); // The gene list for each sample, including cell counts expressing the gene(e.g.{skin_TXK6Z4X_A1: {A1CF: 2, ABCC11: 14, ABCG5: 9, ABRAXAS2: 6, AC011195.2: 3, AC067752.1: 3, AC090360.1: 13,…}})
+    const [selectedGenes, setSelectedGenes] = useState([]); // Stores the list of currently selected genes
+    const [regionName, setRegionName] = useState(''); // The name of the region to be drawn
+    const [regionColor, setRegionColor] = useState(generateRandomColor()); // The color of the region to be drawn
+    const [isDrawingActive, setIsDrawingActive] = useState(false); // Whether the drawing mode is active
+    const [activeDrawingSample, setActiveDrawingSample] = useState(null); // The sample on which the user is currently drawing a region
+    const [currentZoom, setCurrentZoom] = useState(-3); // The current zoom level of the viewer
     const [radioCellGeneModes, setRadioCellGeneModes] = useState(samples.reduce((acc, sample) => ({ ...acc, [sample.id]: 'cellTypes' }), {}));
     const [partWholeMode, setPartWholeMode] = useState(true); // defaultly showing gene expression value in the whole regions
     const [geneExpressionData, setGeneExpressionData] = useState([]);
-    const TILE_LOAD_ZOOM_THRESHOLD = 0;
+    const TILE_LOAD_ZOOM_THRESHOLD = 0; // The zoom threshold to switch between full image vs. tiled image loading
 
     // fetch gene list
     useEffect(() => {
@@ -159,9 +106,8 @@ export const MultiSampleViewer = ({
             const sampleCellTypes = cellTypeDir?.[sample.id] || [];
 
             sampleCellTypes.forEach((cellType) => {
-                const hash = stringToHash(cellType);
-                const hue = hash % 360;
-                initialColorMap[cellType] = hslToRgb(hue, 100, 50);
+                const hue = hashStringToHue(cellType);
+                initialColorMap[cellType] = convertHSLtoRGB(hue, 100, 50);
                 initialVisibility[cellType] = true;
             });
 
@@ -174,24 +120,6 @@ export const MultiSampleViewer = ({
         setColorMaps(initialStates.colorMaps);
         setVisibleCellTypes(initialStates.visibleCellTypes);
     }, [samples, cellTypeDir]);
-
-    // Effect to update selected cells in App.js whenever visibleCellTypes changes
-    useEffect(() => {
-        if (onCellSelect) {
-            // Aggregate visible cell types across all samples
-            const allVisibleTypes = Object.values(visibleCellTypes)
-                .flatMap(sampleVisibility =>
-                    Object.entries(sampleVisibility)
-                        .filter(([_, isVisible]) => isVisible)
-                        .map(([cellType, _]) => cellType)
-                );
-
-            // Remove duplicates and pass up
-            const uniqueVisibleTypes = Array.from(new Set(allVisibleTypes));
-            console.log('MultiSampleViewer: Calling onCellSelect with:', uniqueVisibleTypes);
-            onCellSelect(uniqueVisibleTypes);
-        }
-    }, [visibleCellTypes, onCellSelect]);
 
     // get image sizes for all samples
     useEffect(() => {
@@ -226,9 +154,6 @@ export const MultiSampleViewer = ({
             });
             setSampleOffsets(newOffsets);
         }
-        setVisibleSamples(
-            samples.reduce((acc, sample) => ({ ...acc, [sample.id]: true }), {})
-        );
     }, [imageSizes, samples]);
 
     const analyzedRegionData = useMemo(() => {
@@ -371,7 +296,7 @@ export const MultiSampleViewer = ({
 
         let cellColors = cellIndices.map(index => {
             const positionInSelectedGenes = selectedGenes.indexOf(index);
-            return CELL_COLORS[positionInSelectedGenes % CELL_COLORS.length];
+            return GENE_COLOR_PALETTE[positionInSelectedGenes % GENE_COLOR_PALETTE.length];
         });
         let cellAngles = cellIndices.map(index => angles.find(item => item[0] === index));
         let cellRadius = cellIndices.map(index => cal_radius.find(item => item[0] === index));
@@ -603,14 +528,7 @@ export const MultiSampleViewer = ({
         return points;
     }
 
-    const handleGeneSelectionFromChild = useCallback((selectedGeneList) => {
-        console.log('MultiSampleViewer: Calling onGeneSelect with:', selectedGeneList);
-        if (onGeneSelect) {
-            onGeneSelect(selectedGeneList);
-        }
-    }, [onGeneSelect]);
-
-    const collapseItems = useMemo(() => samples.map((sample) => ({
+    const collapseItems = samples.map((sample) => ({
         key: sample.id,
         label: sample.name,
         children: (
@@ -636,10 +554,10 @@ export const MultiSampleViewer = ({
                                 [sample.id]: { ...prev[sample.id], [type]: color }
                             }));
                         }}
-                        onVisibilityCellTypeChange={(type, isVisible) => {
+                        onVisibilityCellTypeChange={(type, visible) => {
                             setVisibleCellTypes(prev => ({
                                 ...prev,
-                                [sample.id]: { ...prev[sample.id], [type]: isVisible }
+                                [sample.id]: { ...prev[sample.id], [type]: visible }
                             }));
                         }}
                     />
@@ -647,14 +565,14 @@ export const MultiSampleViewer = ({
                     <GeneSettings
                         geneList={geneList[sample.id] || {}}
                         sampleId={sample.id}
-                        onGeneSelectionChange={handleGeneSelectionFromChild}
+                        onVisibilityGeneChange={onVisibilityGeneChange}
                         cleanGeneSelection={cleanGeneSelection}
                         confirmKosaraPlot={confirmKosaraPlot}
                     />
                 )}
             </>
         )
-    })), [samples, cellTypeDir, cellTypeCoordinatesData, colorMaps, visibleCellTypes, radioCellGeneModes, geneList, handleGeneSelectionFromChild, cleanGeneSelection, confirmKosaraPlot]);
+    }));
 
     // TileLayer
     const generateTileLayers = useCallback(() => {
@@ -667,7 +585,6 @@ export const MultiSampleViewer = ({
             const offset = sampleOffsets[sample.id] || [0, 0];
             return new TileLayer({
                 id: `tif-tiles-${sample.id}`,
-                visible: visibleSamples[sample.id],
                 tileSize,
                 extent: [
                     offset[0],
@@ -715,7 +632,7 @@ export const MultiSampleViewer = ({
                 })
             });
         }).filter(Boolean);
-    }, [samples, imageSizes, tileSize, visibleSamples, sampleOffsets, currentZoom]);
+    }, [samples, imageSizes, tileSize, sampleOffsets, currentZoom]);
 
     const generateWholePngLayers = useCallback(() => {
         return samples.map(sample => {
@@ -724,14 +641,14 @@ export const MultiSampleViewer = ({
             if (!imageSize || imageSize.length < 2) return null;
             return new BitmapLayer({
                 id: `png-replacement-${sample.id}`,
-                visible: visibleSamples[sample.id] && currentZoom < TILE_LOAD_ZOOM_THRESHOLD,
+                visible: currentZoom < TILE_LOAD_ZOOM_THRESHOLD,
                 image: `/${sample.id}_full.jpg`,
                 bounds: [offset[0], offset[1] + imageSize[1], offset[0] + imageSize[0], offset[1]],
                 opacity: 1,
                 parameters: { depthTest: false }
             });
         }).filter(Boolean);
-    }, [imageSizes, visibleSamples, sampleOffsets, currentZoom]);
+    }, [imageSizes, sampleOffsets, currentZoom]);
 
     // cell boundaries image layers
     const generateMarkerImageLayers = useCallback(() => {
@@ -741,14 +658,13 @@ export const MultiSampleViewer = ({
             if (!imageSize || imageSize.length < 2) return null;
             return new BitmapLayer({
                 id: `marker-image-${sample.id}`,
-                visible: visibleSamples[sample.id],
                 image: `/${sample.id}_cells_layer.png`,
                 bounds: [offset[0], offset[1] + imageSize[1], offset[0] + imageSize[0], offset[1]],
                 opacity: 1,
                 parameters: { depthTest: false }
             });
         }).filter(Boolean);
-    }, [samples, imageSizes, visibleSamples]);
+    }, [samples, imageSizes]);
 
     // nucleus coordinates scatterplot layers
     const generateCellLayers = useCallback(() => {
@@ -799,7 +715,7 @@ export const MultiSampleViewer = ({
                             data: optimizedPathData,
                             getPolygon: d => d.points,
                             getFillColor: d => {
-                                const rgbColor = hexToRgbs(d.color);
+                                const rgbColor = convertHEXToRGB(d.color);
                                 return [...rgbColor, 255];
                             },
                             pickable: true,
@@ -860,7 +776,7 @@ export const MultiSampleViewer = ({
                             data: optimizedPathData,
                             getPolygon: d => d.points,
                             getFillColor: d => {
-                                const rgbColor = hexToRgbs(d.color);
+                                const rgbColor = convertHEXToRGB(d.color);
                                 return [...rgbColor, 255];
                             },
                             pickable: true,
@@ -900,7 +816,6 @@ export const MultiSampleViewer = ({
                 const offset = sampleOffsets[sampleId] || [0, 0];
                 return new ScatterplotLayer({
                     id: `Scatters-${sampleId}`,
-                    visible: visibleSamples[sampleId],
                     data: data,
                     getPosition: d => [d.cell_x + offset[0], d.cell_y + offset[1]],
                     getRadius: 5,
@@ -914,7 +829,7 @@ export const MultiSampleViewer = ({
                 });
             }
         }).filter(Boolean);
-    }, [samples, filteredCellData, colorMaps, visibleSamples, sampleOffsets, visibleCellTypes, geneExpressionData, selectedGenes, analyzedRegion, NMFclusterCells, partWholeMode, regions]);
+    }, [samples, filteredCellData, colorMaps, sampleOffsets, visibleCellTypes, geneExpressionData, selectedGenes, analyzedRegion, NMFclusterCells, partWholeMode, regions]);
 
     // update current region data
     const handleRegionUpdate = (sampleId, updatedData) => {
@@ -1052,12 +967,6 @@ export const MultiSampleViewer = ({
                 },
                 selectedFeatureIndexes: [],
                 onEdit: ({ updatedData }) => {
-                    console.log('MultiSampleViewer: _onEdit triggered');
-                    console.log('Updated Data Features:', updatedData?.features);
-
-                    const selectedCellTypes = updatedData?.features?.map(f => f.properties.cell_type) || [];
-                    console.log('MultiSampleViewer: Calling onCellSelect with:', selectedCellTypes);
-
                     handleRegionUpdate(sample.id, updatedData);
                 },
                 visible: isDrawingActive && sample.id === activeDrawingSample,
@@ -1158,18 +1067,6 @@ export const MultiSampleViewer = ({
         regions,
         sampleOffsets
     ]);
-
-    const handleCellSelection = (cells) => {
-        if (onCellSelect) {
-            onCellSelect(cells);
-        }
-    };
-
-    const handleGeneSelection = (genes) => {
-        if (onGeneSelect) {
-            onGeneSelect(genes);
-        }
-    };
 
     return (
         <div style={{ width: '100%', height: '100%', display: 'flex', borderRight: '2px solid #e8e8e8' }}>
@@ -1335,10 +1232,11 @@ export const MultiSampleViewer = ({
                                 variant="outlined"
                                 onClick={() => {
                                     if (!isDrawingActive) {
-                                        setActiveDrawingSample(activeSample);
+                                        const defaultSampleId = samples[0]?.id;
+                                        setActiveDrawingSample(defaultSampleId);
                                         setFeatures(prev => ({
                                             ...prev,
-                                            [activeSample]: { type: 'FeatureCollection', features: [] }
+                                            [defaultSampleId]: { type: 'FeatureCollection', features: [] }
                                         }));
                                         setIsDrawingActive(true);
                                     } else {
@@ -1399,14 +1297,26 @@ export const MultiSampleViewer = ({
                                                 display: 'flex',
                                                 justifyContent: 'space-between',
                                                 alignItems: 'center',
-                                                marginBottom: 4,
+                                                marginBottom: 10,
                                                 fontSize: '12px',
                                                 color: '#555'
                                             }}>
-                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }}>
-                                                    <span style={{ fontSize: 14, marginBottom: 10 }}>{region.name}</span>
-                                                    <span style={{ fontSize: 10, color: "#666" }}>Sample: {sampleId}</span>
-                                                    <span style={{ fontSize: 10, color: "#666" }}>Cells: {cellCount}</span>
+                                                <div style={{ display: 'flex' }}>
+                                                    <Checkbox
+                                                        checked={analyzedRegion[region.id] ?? false}
+                                                        onChange={(e) => {
+                                                            setAnalyzedRegion(prev => ({
+                                                                ...prev,
+                                                                [region.id]: e.target.checked
+                                                            }));
+                                                        }}
+                                                        style={{ marginRight: 8 }}
+                                                    />
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center' }}>
+                                                        <span style={{ fontSize: 14 }}>{region.name}</span>
+                                                        <span style={{ fontSize: 10, color: "#666" }}>Sample: {sampleId}</span>
+                                                        <span style={{ fontSize: 10, color: "#666" }}>Cells: {cellCount}</span>
+                                                    </div>
                                                 </div>
                                                 <CloseOutlined
                                                     onClick={(e) => { e.stopPropagation(); handleDeleteRegion(region.id); }}
@@ -1491,9 +1401,8 @@ const CellTypeSettings = ({
 };
 
 // gene names display
-const GeneSettings = ({ geneList, sampleId, onGeneSelectionChange, cleanGeneSelection, confirmKosaraPlot }) => {
+const GeneSettings = ({ geneList, sampleId, onVisibilityGeneChange, cleanGeneSelection, confirmKosaraPlot }) => {
     const [searchText, setSearchText] = useState('');
-    const [currentlySelectedGenes, setCurrentlySelectedGenes] = useState([]);
 
     const filteredGenes = useMemo(() =>
         Object.entries(geneList)
@@ -1501,29 +1410,6 @@ const GeneSettings = ({ geneList, sampleId, onGeneSelectionChange, cleanGeneSele
             .filter(([gene]) => gene.toLowerCase().includes(searchText.toLowerCase()))
         || []
         , [geneList, searchText]);
-
-    const handleCheckboxChange = (gene, isChecked) => {
-        let updatedSelection;
-        if (isChecked) {
-            updatedSelection = [...currentlySelectedGenes, gene];
-        } else {
-            updatedSelection = currentlySelectedGenes.filter(g => g !== gene);
-        }
-        setCurrentlySelectedGenes(updatedSelection);
-        if (onGeneSelectionChange) {
-            onGeneSelectionChange(updatedSelection);
-        }
-    };
-
-    const handleClearInternal = () => {
-        setCurrentlySelectedGenes([]);
-        if (onGeneSelectionChange) {
-            onGeneSelectionChange([]);
-        }
-        if (cleanGeneSelection) {
-            cleanGeneSelection();
-        }
-    };
 
     return (
         <div style={{ maxHeight: 400 }}>
@@ -1542,10 +1428,8 @@ const GeneSettings = ({ geneList, sampleId, onGeneSelectionChange, cleanGeneSele
                         padding: '8px 0',
                         borderBottom: '1px solid #f0f0f0',
                     }}>
-                        <Checkbox
-                            style={{ marginRight: 8 }}
-                            checked={currentlySelectedGenes.includes(gene)}
-                            onChange={e => handleCheckboxChange(gene, e.target.checked)}
+                        <Checkbox style={{ marginRight: 8 }}
+                            onChange={e => onVisibilityGeneChange(gene)}
                         />
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                             <span style={{ fontSize: 12 }}>{gene}</span>
@@ -1555,11 +1439,9 @@ const GeneSettings = ({ geneList, sampleId, onGeneSelectionChange, cleanGeneSele
                 ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 5 }}>
-                <Button size='small' style={{ width: '50%' }} onClick={handleClearInternal}>Clear</Button>
+                <Button size='small' style={{ width: '50%' }} onClick={cleanGeneSelection}>Clear</Button>
                 <Button size='small' style={{ width: '50%' }} onClick={() => confirmKosaraPlot(sampleId)}>Confirm</Button>
             </div>
         </div>
     );
 };
-
-export default MultiSampleViewer;

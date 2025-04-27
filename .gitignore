@@ -46,7 +46,9 @@ Thumbs.db
 data/
 *.tiff
 *.jpg
+# *.png  # Allow tracking PNG files
 *.gif
+# *.mp4  # Allow tracking MP4 files
 *.avi
 *.mov
 *.h5
