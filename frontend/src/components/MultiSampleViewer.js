@@ -802,7 +802,7 @@ export const MultiSampleViewer = ({
                                 const rgbColor = hexToRgbs(d.color);
                                 return [...rgbColor, 255];
                             },
-                            pickable: true,
+                            pickable: !isDrawingActive,
                             stroked: false,
                             parameters: { depthTest: false, blend: true },
                             updateTriggers: {
@@ -823,7 +823,7 @@ export const MultiSampleViewer = ({
                                 return [...defaultColor, 255];
                             },
                             getRadius: 5,
-                            pickable: true,
+                            pickable: !isDrawingActive,
                             parameters: { depthTest: false },
                             updateTriggers: {
                                 getFillColor: [colorMaps[sampleId], visibleCellTypes[sampleId]],
@@ -863,7 +863,7 @@ export const MultiSampleViewer = ({
                                 const rgbColor = hexToRgbs(d.color);
                                 return [...rgbColor, 255];
                             },
-                            pickable: true,
+                            pickable: !isDrawingActive,
                             stroked: false,
                             parameters: { depthTest: false, blend: true },
                             updateTriggers: {
@@ -905,7 +905,7 @@ export const MultiSampleViewer = ({
                     getPosition: d => [d.cell_x + offset[0], d.cell_y + offset[1]],
                     getRadius: 5,
                     getFillColor: getFillColor,
-                    pickable: true,
+                    pickable: !isDrawingActive,
                     parameters: { depthTest: false },
                     updateTriggers: {
                         getFillColor: [colorMaps[sampleId], visibleCellTypes[sampleId], NMFclusterCells, analyzedRegionData],
@@ -1111,7 +1111,6 @@ export const MultiSampleViewer = ({
             ...generateWholePngLayers(),
             ...generateTileLayers(),
             ...generateMarkerImageLayers(),
-            ...generateEditLayers(),
             regionLabelLayer,
             ...regions.map(region => {
                 const offset = sampleOffsets[region.sampleId] || [0, 0];
@@ -1139,7 +1138,7 @@ export const MultiSampleViewer = ({
                 return new GeoJsonLayer({
                     id: `Selected-region-${region.id}`,
                     data: globalFeature,
-                    pickable: true,
+                    pickable: !isDrawingActive,
                     stroked: true,
                     filled: true,
                     lineWidthMinPixels: 2,
@@ -1148,6 +1147,7 @@ export const MultiSampleViewer = ({
                 });
             }),
             ...generateCellLayers(),
+            ...generateEditLayers(),
         ].filter(Boolean);
     }, [
         generateWholePngLayers,
