@@ -102,7 +102,7 @@ const RegionalGeneCellRelationship = ({ selectedCells = [], selectedGenes = [], 
                         {(analysis.selected_cells.length > 0 && analysis.selected_genes.length > 0) ? (
                             <>
                                 <h3 style={{ textAlign: 'left', fontWeight: 'bold', marginTop: '0', paddingTop: '0', marginBottom: '0.5em' }}>
-                                    BioBERT Analysis:
+                                    {selectedModel === 'gemini' ? 'Gemini Analysis:' : 'BioBERT Analysis:'}
                                 </h3>
                                 <div style={{
                                     whiteSpace: 'pre-wrap',

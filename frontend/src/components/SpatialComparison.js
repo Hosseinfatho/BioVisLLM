@@ -106,7 +106,7 @@ const SpatialComparison = ({ selectedCells = [], selectedGenes = [], selectedMod
                         {(top5Cells.length > 0 && top5Genes.length > 0) ? (
                             <>
                                 <h3 style={{ textAlign: 'left', fontWeight: 'bold', marginTop: '0', paddingTop: '0', marginBottom: '0.5em' }}>
-                                    BioBERT Analysis:
+                                    {selectedModel === 'gemini' ? 'Gemini Analysis:' : 'BioBERT Analysis:'}
                                 </h3>
                                 <div style={{
                                     whiteSpace: 'pre-wrap',
